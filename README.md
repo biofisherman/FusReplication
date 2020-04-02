@@ -2,7 +2,7 @@
 ## Code for figures:
 * __Fig. 6E:__ [Quantification results of PLA_FUS](/Fig_PLA_FUS.md)
   * [RMD file](code/Fig_PLA_FUS.Rmd).
-  * [CellProfiler pipeline](code/).
+  * [CellProfiler pipeline(PLA_Nuclear.cppipe)](code/).
   * [raw data of POLD1_U2OS_CSK_Nuclei.csv](data/POLD1_U2OS_CSK_Nuclei.csv).
   * [raw data of POLD1_Clone110_CSK_Nuclei.csv](data/POLD1_Clone110_CSK_Nuclei.csv).
   * [raw data of PCNA_U2OS_CSK_Nuclei.csv](data/PCNA_U2OS_CSK_Nuclei.csv).
