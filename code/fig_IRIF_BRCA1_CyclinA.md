@@ -65,7 +65,7 @@ po<-ggboxplot(IRIF_BRCA1_CyclinA_sum,
 po
 ```
 
-![](fig_IRIF_BRCA1_CyclinA_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](FusReplication/fig_IRIF_BRCA1_CyclinA_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 ``` r
 graph2pdf(file="plots/IRIF_BRCA1/IRIF_BRCA1_CyclinA_all.pdf", width=6, aspectr=sqrt(2),font = "Arial",bg = "transparent")
@@ -91,14 +91,14 @@ p<-ggboxplot(IRIF_BRCA1_CyclinA_sum,
 p
 ```
 
-![](fig_IRIF_BRCA1_CyclinA_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
+![](FusReplication/fig_IRIF_BRCA1_CyclinA_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
 
 ``` r
 p+stat_compare_means(comparisons = list(c("GUSU2OS","GUSClone110"),c("GUSU2OS","FUSClone110"),c("GUSClone110","FUSClone110")), method = "t.test",
                      label = "p.format")
 ```
 
-![](fig_IRIF_BRCA1_CyclinA_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->
+![](FusReplication/fig_IRIF_BRCA1_CyclinA_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->
 
 ``` r
 graph2pdf(file="plots/IRIF_BRCA1/IRIF_BRCA1_CyclinA_test.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
