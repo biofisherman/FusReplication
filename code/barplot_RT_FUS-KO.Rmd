@@ -1,0 +1,132 @@
+---
+title: "FUS regulates DNA replication timing in U-2 OS cells"
+author: "Weiyan"
+date: "4/2/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/weiyanjia/Desktop/FUS_paper_Figures/FUS_Paper")
+```
+
+**Note**:
+
+> Asynchronous U-2 OS cells and three FUS deletion clones (Clone46, Clone65 and Clone110) were pulse-labeled with EdU and then the S phase cells were divided to three stages based on EdU foci pattern as shown in U-2 OS. 
+
+```{r}
+getwd()
+```
+# 1.Barplot of RT in FUS knock out cells
+## 1.1 data organization
+
+```{r}
+RT_1 <- read.delim("clean/RT_1.txt", header = TRUE, sep ="\t", stringsAsFactors = FALSE)
+RT_1
+library(tidyr)
+RT_1_sum <- RT_1 %>%
+  gather(key = sample, value = cell_count, -RT)
+RT_1_sum
+library(dplyr)
+RT_1_sum <- RT_1_sum %>%
+  group_by(sample, RT) %>%
+  summarise(cell_count= sum(cell_count))
+RT_1_sum
+library(data.table)
+setDT(RT_1_sum)[, Percentage := round(100*cell_count/sum(cell_count), 2),
+                   by =  sample]
+str(RT_1_sum)
+RT_1_sum$RT <- factor(RT_1_sum$RT, levels= c("Late S","Middle S","Early S"))
+RT_1_sum$sample <- factor(RT_1_sum$sample, levels= c("Clone110","Clone65","Clone46","U2OS"))
+
+RT_1_sum
+```
+
+## 1.2 barplot of RT_1
+
+```{r RT of FUS Knockout cells and reconstitued cells, fig.height=4, fig.width=6}
+library(dplyr)
+library(tidyverse)
+RT_2 <- read.delim("clean/RT_2.txt", header = TRUE, sep ="\t", stringsAsFactors = FALSE)
+RT_2
+RT_2_sum <- RT_2 %>%
+  gather(key = sample, value = cell_count, -RT) # for simple : gather(sample, cell_count, -RT)
+
+RT_2_sum
+
+RT_2_sum <- RT_2_sum %>%
+  group_by(sample) %>%
+  mutate(Percentage= round(100*cell_count/sum(cell_count),2))
+RT_2_sum 
+
+RT_2_sum$RT <- factor(RT_2_sum$RT, levels= c("Late S","Middle S","Early S"))
+RT_2_sum$sample <- factor(RT_2_sum$sample, levels= c("FUSClone110","GUSClone110","FUSU2OS","GUSU2OS"))
+RT_2_sum
+write.csv(RT_2_sum, file="clean/RT_EdU_FUS-KO.csv")
+library(ggpubr)
+ggbarplot(RT_2_sum, x="sample", 
+          y= "Percentage",
+          ylab = "Percentage(%)",
+          xlab = "",
+          legend.title ="",
+          color = "RT",
+          fill = "RT",
+          palette = "aaas",
+          label = TRUE,
+          lab.pos = "in",
+          width = 0.6,
+          orientation = "horiz",
+          lab.col = "white"
+          )+   
+  scale_y_continuous(expand = c(0, 0))
+```
+
+# 2. Barplot of RT using Double thymidine treated samples
+
+## 2.1 data loading
+note: 1. Asychronized sample named by "0" in time column.
+      2. time was relase from doublt thymidine treatement (hours)
+
+```{r}
+RT_dt <- read.delim("clean/RT_DT_assay.txt", header = TRUE, sep ="\t", stringsAsFactors = FALSE)
+RT_dt
+RT_dt <- RT_dt %>%
+  group_by(Sample, time) %>%
+  mutate(Percentage= round(100*cell_count/sum(cell_count),2))
+RT_dt 
+RT_dt$RT <- factor(RT_dt$RT, levels= c("Late S","Middle S","Early S"))
+RT_dt$sample_order <- factor(RT_dt$Sample, levels= c("FUSClone110","GUSClone110","GUSU2OS"))
+RT_dt
+write.csv(RT_dt, file="clean/RT_BrdU_DoubleThymidine_FUS.csv")
+```
+## 2.2 barplot
+
+### 2.2.1 barplot of Double thymidine data
+
+```{r}
+library(ggpubr)
+dt<- ggbarplot(RT_dt, x="sample_order", 
+          y= "Percentage",
+          facet.by = "time",
+          ylab = "Percentage(%)",
+          xlab = "",
+          legend.title ="",
+          color = "RT",
+          fill = "RT",
+          palette = "aaas",
+          label = TRUE,
+          lab.pos = "in",
+          width = 0.6,
+          orientation = "horiz",
+          lab.col = "white"
+          )+   
+  scale_y_continuous(expand = c(0, 0))
+dt
+```
+
+### 2.2.2 barplot of Double thymidine data (facet by time)
+```{r fig.height=8, fig.width=6}
+facet(dt, facet.by="time", ncol= 1,
+      panel.labs.background = list(fill = "white", color = "grey")
+     )
+```
