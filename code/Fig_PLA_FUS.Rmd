@@ -1,0 +1,257 @@
+---
+title: "Quantification results of PLA_FUS"
+author: "Weiyan"
+date: "4/2/2020"
+output: github_document
+---
+
+>Check the interaction between FUS, and POLD1,FEN1 and PCNA under with preextraction
+
+**Note**:
+
+> 1. Samples: GUS/U2OS(FUS, WT) and GUS/Clone110(FUS,KO);
+  2. Preextraction with CKS+0.5% Triton-X100 8min on ice with shacking (speed: 4)
+  3. Antibodies: FUS, POLD1,FEN1, PCNA;
+  4. PLA foci was quantified by CellProfiler
+  5. Data collected on 20190828
+
+# Packages
+
+```{r message=FALSE, warning=FALSE}
+library(ggpubr)
+library(ggsci)
+library(ggExtra)
+library(export)
+library(tidyverse)
+```
+
+# 1. FEN1
+
+## 1.1 **FEN1_data loading**
+
+```{r}
+FEN1_WT_CSK_Nuclei <- read.csv("/Users/weiyanjia/Desktop/PLA/08282019/analysis/raw/FEN1_U2OS_CSK_Nuclei.csv",header = TRUE)
+FEN1_KO_CSK_Nuclei <- read.csv("/Users/weiyanjia/Desktop/PLA/08282019/analysis/raw/FEN1_Clone110_CSK_Nuclei.csv",header = TRUE)
+```
+
+## 1.2 **FEN1_U2OS_CSK**
+
+```{r fig.height=6, fig.width=8}
+FEN1_WT_CSK_Nuclei_1<- FEN1_WT_CSK_Nuclei%>%
+                      dplyr::select(ImageNumber, Children_PLA_Count,Intensity_IntegratedIntensity_DAPI)%>%
+                      dplyr::mutate(ImageNumber= as.factor(ImageNumber))%>%
+                      dplyr::mutate(sample="WT_CSK")%>%
+                      dplyr::mutate(antibody="FEN1")%>%
+                      dplyr::mutate(sample= as.factor(sample),antibody= as.factor(antibody))
+```
+
+## 1.3 **FEN1_Clone110_KO**
+
+```{r fig.height=6, fig.width=8}
+FEN1_KO_CSK_Nuclei_1<- FEN1_KO_CSK_Nuclei%>%
+                      dplyr::select(ImageNumber, Children_PLA_Count,Intensity_IntegratedIntensity_DAPI)%>%
+                      dplyr::mutate(ImageNumber= as.factor(ImageNumber))%>%
+                      dplyr::mutate(sample="KO_CSK")%>%
+                      dplyr::mutate(antibody="FEN1")%>%
+                      dplyr::mutate(sample= as.factor(sample),antibody= as.factor(antibody))
+```
+
+## 1.4 **FEN1 Merged data**
+
+```{r}
+
+PLA_FEN1_Nuclei<- bind_rows(
+                            FEN1_WT_CSK_Nuclei_1,
+                            FEN1_KO_CSK_Nuclei_1
+                            )
+PLA_FEN1_Nuclei <- PLA_FEN1_Nuclei%>%
+                   dplyr::mutate(condition="Pre-extraction")
+```
+
+```{r}
+PLA_FEN1_Nuclei_Median <- PLA_FEN1_Nuclei%>%
+              group_by(sample,antibody,condition)%>%
+              summarise(MD = median(Children_PLA_Count))
+PLA_FEN1_Nuclei_Median
+PLA_FEN1_Tally <-PLA_FEN1_Nuclei%>%
+                 group_by(sample)%>%
+                 tally()
+PLA_FEN1_Tally
+```
+
+
+```{r fig.height=6, fig.width=8}
+FEN1_CSK <- PLA_FEN1_Nuclei%>%
+             filter(condition == "Pre-extraction")
+ggboxplot(FEN1_CSK, 
+          x="sample",
+          y="Children_PLA_Count",
+          color = "sample",
+          palette = "aaas",
+          add = "median",
+          ylab = "PLA Counts",
+          xlab = ""
+          )+
+  stat_compare_means(comparisons = list(c("WT_CSK","KO_CSK")), method = "wilcox.test",
+                     label = "p.format",
+                     label.y =30)+ ## method:"wilcox.test", "anova"...
+  geom_text(data = subset(PLA_FEN1_Nuclei_Median, condition == "Pre-extraction" ), aes(x=sample, y= MD, label = MD),
+              position = position_dodge(width = 0.8), size = 3, vjust = -0.5,
+            ) 
+graph2pdf(file="/Users/weiyanjia/Desktop/PLA/08282019/analysis/results/PLAofFEN1_CSK.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+# 2. PCNA
+
+## 2.1 **PCNA_data loading**
+
+```{r}
+PCNA_WT_CSK_Nuclei <- read.csv("/Users/weiyanjia/Desktop/PLA/08282019/analysis/raw/PCNA_U2OS_CSK_Nuclei.csv",header = TRUE)
+PCNA_KO_CSK_Nuclei <- read.csv("/Users/weiyanjia/Desktop/PLA/08282019/analysis/raw/PCNA_Clone110_CSK_Nuclei.csv",header = TRUE)
+```
+
+## 2.2 **PCNA_U2OS_CSK**
+
+```{r fig.height=6, fig.width=8}
+PCNA_WT_CSK_Nuclei_1<- PCNA_WT_CSK_Nuclei%>%
+                      dplyr::select(ImageNumber, Children_PLA_Count,Intensity_IntegratedIntensity_DAPI)%>%
+                      dplyr::mutate(ImageNumber= as.factor(ImageNumber))%>%
+                      dplyr::mutate(sample="WT_CSK")%>%
+                      dplyr::mutate(antibody="PCNA")%>%
+                      dplyr::mutate(sample= as.factor(sample),antibody= as.factor(antibody))
+```
+
+## 2.3 **PCNA_Clone110_KO**
+
+```{r fig.height=6, fig.width=8}
+PCNA_KO_CSK_Nuclei_1<- PCNA_KO_CSK_Nuclei%>%
+                      dplyr::select(ImageNumber, Children_PLA_Count,Intensity_IntegratedIntensity_DAPI)%>%
+                      dplyr::mutate(ImageNumber= as.factor(ImageNumber))%>%
+                      dplyr::mutate(sample="KO_CSK")%>%
+                      dplyr::mutate(antibody="PCNA")%>%
+                      dplyr::mutate(sample= as.factor(sample),antibody= as.factor(antibody))
+```
+
+## 2.4 **PCNA Merged data**
+
+```{r}
+PLA_PCNA_Nuclei<- bind_rows(
+                            PCNA_WT_CSK_Nuclei_1,
+                            PCNA_KO_CSK_Nuclei_1
+                            )
+PLA_PCNA_Nuclei <- PLA_PCNA_Nuclei%>%
+                   dplyr::mutate(condition="Pre-extraction")
+```
+
+```{r}
+PLA_PCNA_Nuclei_Median <- PLA_PCNA_Nuclei%>%
+              group_by(sample,antibody,condition)%>%
+              summarise(MD = median(Children_PLA_Count))
+PLA_PCNA_Nuclei_Median
+PLA_PCNA_Tally <-PLA_PCNA_Nuclei%>%
+                 group_by(sample)%>%
+                 tally()
+PLA_PCNA_Tally
+```
+
+
+```{r fig.height=6, fig.width=8}
+PCNA_CSK <- PLA_PCNA_Nuclei%>%
+             filter(condition == "Pre-extraction")
+ggboxplot(PCNA_CSK, 
+          x="sample",
+          y="Children_PLA_Count",
+          color = "sample",
+          palette = "aaas",
+          add = "median",
+          ylab = "PLA Counts",
+          xlab = ""
+          )+
+  stat_compare_means(comparisons = list(c("WT_CSK","KO_CSK")), method = "wilcox.test",
+                     label = "p.format",
+                     label.y =80)+ ## method:"wilcox.test", "anova"...
+  geom_text(data = subset(PLA_PCNA_Nuclei_Median, condition == "Pre-extraction" ), aes(x=sample, y= MD, label = MD),
+              position = position_dodge(width = 0.8), size = 3, vjust = -0.5,
+            ) 
+graph2pdf(file="/Users/weiyanjia/Desktop/PLA/08282019/analysis/results/PLAofPCNA_CSK.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+# 3. POLD1
+
+## 3.1 **POLD1_data loading**
+
+```{r}
+POLD1_WT_CSK_Nuclei <- read.csv("/Users/weiyanjia/Desktop/PLA/08282019/analysis/raw/POLD1_U2OS_CSK_Nuclei.csv",header = TRUE)
+POLD1_KO_CSK_Nuclei <- read.csv("/Users/weiyanjia/Desktop/PLA/08282019/analysis/raw/POLD1_Clone110_CSK_Nuclei.csv",header = TRUE)
+```
+
+## 3.2 **POLD1_U2OS_CSK**
+
+```{r fig.height=6, fig.width=8}
+POLD1_WT_CSK_Nuclei_1<- POLD1_WT_CSK_Nuclei%>%
+                      dplyr::select(ImageNumber, Children_PLA_Count,Intensity_IntegratedIntensity_DAPI)%>%
+                      dplyr::mutate(ImageNumber= as.factor(ImageNumber))%>%
+                      dplyr::mutate(sample="WT_CSK")%>%
+                      dplyr::mutate(antibody="POLD1")%>%
+                      dplyr::mutate(sample= as.factor(sample),antibody= as.factor(antibody))
+```
+
+## 3.3 **POLD1_Clone110_KO**
+
+```{r fig.height=6, fig.width=8}
+POLD1_KO_CSK_Nuclei_1<- POLD1_KO_CSK_Nuclei%>%
+                      dplyr::select(ImageNumber, Children_PLA_Count,Intensity_IntegratedIntensity_DAPI)%>%
+                      dplyr::mutate(ImageNumber= as.factor(ImageNumber))%>%
+                      dplyr::mutate(sample="KO_CSK")%>%
+                      dplyr::mutate(antibody="POLD1")%>%
+                      dplyr::mutate(sample= as.factor(sample),antibody= as.factor(antibody))
+```
+
+## 3.4 **POLD1 Merged data**
+
+```{r}
+PLA_POLD1_Nuclei<- bind_rows(
+                            POLD1_WT_CSK_Nuclei_1,
+                            POLD1_KO_CSK_Nuclei_1
+                            )
+PLA_POLD1_Nuclei <- PLA_POLD1_Nuclei%>%
+                   dplyr::mutate(condition="Pre-extraction")
+```
+
+```{r}
+PLA_POLD1_Nuclei_Median <- PLA_POLD1_Nuclei%>%
+              group_by(sample,antibody,condition)%>%
+              summarise(MD = median(Children_PLA_Count))
+PLA_POLD1_Nuclei_Median
+PLA_POLD1_Tally <-PLA_POLD1_Nuclei%>%
+                 group_by(sample)%>%
+                 tally()
+PLA_POLD1_Tally
+```
+
+
+```{r fig.height=6, fig.width=8}
+POLD1_CSK <- PLA_POLD1_Nuclei%>%
+             filter(condition == "Pre-extraction")
+ggboxplot(POLD1_CSK, 
+          x="sample",
+          y="Children_PLA_Count",
+          color = "sample",
+          palette = "aaas",
+          add = "median",
+          ylab = "PLA Counts",
+          xlab = ""
+          )+
+  stat_compare_means(comparisons = list(c("WT_CSK","KO_CSK")), method = "wilcox.test",
+                     label = "p.format",
+                     label.y =20)+ ## method:"wilcox.test", "anova"...
+  geom_text(data = subset(PLA_POLD1_Nuclei_Median, condition == "Pre-extraction" ), aes(x=sample, y= MD, label = MD),
+              position = position_dodge(width = 0.8), size = 3, vjust = -0.5,
+            ) 
+graph2pdf(file="/Users/weiyanjia/Desktop/PLA/08282019/analysis/results/PLAofPOLD1_CSK.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+
+```{r}
+sessionInfo()
+```

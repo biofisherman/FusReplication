@@ -1,5 +1,14 @@
 # Fused in sarcoma regulates DNA replication timing and progression
 ## Code for figures:
+* __Fig. 6E:__ [Quantification results of PLA_FUS](/Fig_PLA_FUS.md)
+  * [RMD file](code/Fig_PLA_FUS.Rmd).
+  * [CellProfiler pipeline](code/PLA_Nuclear.cppipe).
+  * [raw data of POLD1_U2OS_CSK_Nuclei.csv](data/POLD1_U2OS_CSK_Nuclei.csv).
+  * [raw data of POLD1_Clone110_CSK_Nuclei.csv](data/POLD1_Clone110_CSK_Nuclei.csv).
+  * [raw data of PCNA_U2OS_CSK_Nuclei.csv](data/PCNA_U2OS_CSK_Nuclei.csv).
+  * [raw data of PCNA_Clone110_CSK_Nuclei.csv](data/PCNA_Clone110_CSK_Nuclei.csv).
+  * [raw data of FEN1_U2OS_CSK_Nuclei.csv](data/FEN1_U2OS_CSK_Nuclei.csv).
+  * [raw data of FEN1_Clone110_CSK_Nuclei.csv](data/FEN1_Clone110_CSK_Nuclei.csv).
 * __Fig. 7:__ [FUS regulates DNA replication timing in U-2 OS cells](/barplot_RT_FUS-KO.md)
   * [RMD file](code/barplot_RT_FUS-KO.Rmd).
   * [raw data of 7B](data/RT_EdU_FUS-KO.csv).
