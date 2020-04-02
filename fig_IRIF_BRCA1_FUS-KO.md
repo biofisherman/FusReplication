@@ -80,11 +80,7 @@ p<-ggboxplot(IRIF_BRCA1_sum,
           ylab = "BRCA1 Foci Counts",
           xlab = ""
           )
-p
 ```
-
-![](fig_IRIF_BRCA1_FUS-KO_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
-
 ``` r
 p+stat_compare_means(comparisons = list(c("U2OS","Clone46"),c("U2OS","Clone110")), method = "t.test",
                      label = "p.format")
