@@ -1,0 +1,61 @@
+---
+title: "Doughnut pie chart of FADs coverage"
+author: "Weiyan"
+date: "4/2/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/weiyanjia/Desktop/FUS_paper_Figures/FUS_Paper")
+```
+#Doughnut chart for FADs
+
+```{r}
+library(tidyverse)
+library(export)
+df <- "name  type    value
+ERD   all     40.42
+ERD   FAD   4.37
+ERD   type2   36.05
+MRD   all     27.13
+MRD   FAD   9.26
+MRD   type2   17.87
+LRD   all     32.45
+LRD   FAD   6.53
+LRD   type2   25.92" %>% read_table2() %>%
+    filter(type != "all") %>%
+    mutate(name = as.factor(name) %>% fct_reorder(value, sum)) %>%
+    arrange(name, value) %>%
+    mutate(type = as.factor(type) %>% fct_reorder2(name, value))
+write.csv(df, file="clean/FADs_coverage.csv")
+lvl0 <- tibble(name = "Parent", value = 0, level = 0, fill = NA)
+
+lvl1 <- df %>%
+    group_by(name) %>%
+    summarise(value = sum(value)) %>%
+    ungroup() %>%
+    mutate(level = 1) %>%
+    mutate(fill = name)
+
+lvl2 <- df %>%
+    select(name = type, value, fill = name) %>%
+    mutate(level = 2)
+
+ bind_rows(lvl0, lvl1, lvl2) %>%
+    mutate(name = as.factor(name) %>% fct_reorder2(fill, value)) %>%
+    arrange(fill, name) %>%
+    mutate(level = as.factor(level)) %>%
+    ggplot(aes(x = level, y = value, fill = fill, alpha = level)) +
+        geom_col(width = 1, color = "white", size = 0.25, position = position_stack()) +
+        geom_text(aes(label = name), size = 2.5, position = position_stack(vjust = 0.5)) +
+        coord_polar(theta = "y") +
+        scale_alpha_manual(values = c("0" = 0, "1" = 1, "2" = 0.7), guide = F) +
+        scale_x_discrete(breaks = NULL) +
+        scale_y_continuous(breaks = NULL) +
+        scale_fill_brewer(palette = "Dark2", na.translate = F) +
+        labs(x = NULL, y = NULL) +
+        theme_minimal()+
+        theme(panel.grid=element_blank())
+graph2pdf(file="plots/FAD_doughnut.pdf", width=6, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
