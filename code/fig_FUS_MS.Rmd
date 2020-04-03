@@ -1,0 +1,339 @@
+---
+title: "Analysis of FUS MS/MS data"
+author: "Weiyan"
+date: "4/3/2020"
+output: github_document
+---
+
+## 1. Load packages
+```{r}
+library("tidyverse")
+library("tibble")
+library("ggpubr")
+library(pheatmap)
+library(fgsea)
+library(viridis)
+library(export)
+library(data.table)
+library(DT)
+library(org.Hs.eg.db)
+```
+## 2. Data processing
+
+```{r}
+FUS_norm_raw <- read.csv("AllResultsOfQuantification_FUS.csv", header = TRUE)
+
+FUS_PSMs_raw <- read.csv("PSMs_FUS.csv", header = TRUE)
+
+FUS_PSMs_raw <-FUS_PSMs_raw%>%
+               dplyr::mutate(PSMs_ave =rowMeans(dplyr::select(FUS_PSMs_raw,contains("PSMs")),na.rm = FALSE) )%>%
+               dplyr::mutate(Unique_ave =rowMeans(dplyr::select(FUS_PSMs_raw,contains("Unique")),na.rm = FALSE))
+
+FUS_norm <- FUS_norm_raw %>% 
+            mutate(WT_Mean = rowMeans(dplyr::select(FUS_norm_raw,contains("U2OS")),na.rm = TRUE)) %>%
+            mutate(KO_Mean = rowMeans(dplyr::select(FUS_norm_raw,contains("clone110")),na.rm = TRUE))%>%
+            mutate(fc_log2 = WT_Mean-KO_Mean)%>%
+            dplyr::rename(pvalue_log=X.LOG.P.value.,clone110_bio1_r1=Intensity_03.14.18_clone110_bio1_rep1.calib,clone110_bio1_r2=Intensity_03.14.18_clone110_bio1_rep2.calib,
+                          clone110_bio2_r1=Intensity_03.14.18_clone110_bio2_rep1.calib,clone110_bio2_r2=Intensity_03.14.18_clone110_bio2_rep2.calib,
+                          clone110_bio3_r1=Intensity_04.02.18_clone110_bio3_rep1.calib,clone110_bio3_r2=Intensity_04.02.18_clone110_bio3_rep2.calib,
+                          U2OS_bio1_r1=Intensity_03.14.18_U2OS_bio1_rep1.calib, U2OS_bio1_r2=Intensity_03.14.18_U2OS_bio1_rep2.calib,
+                          U2OS_bio2_r1=Intensity_03.14.18_U2OS_bio2_rep1.calib, U2OS_bio2_r2=Intensity_03.14.18_U2OS_bio2_rep2.calib,
+                          U2OS_bio3_r1=Intensity_04.02.18_U2OS_bio3_rep1.calib,U2OS_bio3_r2=Intensity_04.02.18_U2OS_bio3_rep2.calib)%>%
+            dplyr::select(Protein.Accession,U2OS_bio1_r1,U2OS_bio1_r2,U2OS_bio2_r1,U2OS_bio2_r2,U2OS_bio3_r1,U2OS_bio3_r2, clone110_bio1_r1,
+                          clone110_bio1_r2,clone110_bio2_r1,clone110_bio2_r2, clone110_bio3_r1, clone110_bio3_r2,WT_Mean, KO_Mean,fc_log2, Fold.Change, pvalue_log)
+
+FUS_norm_1 <- FUS_norm %>%
+           mutate(U2OS_bio1 = rowMeans(dplyr::select(FUS_norm,contains("U2OS_bio1")),na.rm = TRUE),
+                  U2OS_bio2 = rowMeans(dplyr::select(FUS_norm,contains("U2OS_bio2")),na.rm = TRUE),
+                  U2OS_bio3 = rowMeans(dplyr::select(FUS_norm,contains("U2OS_bio3")),na.rm = TRUE),
+                  clone110_bio1 = rowMeans(dplyr::select(FUS_norm,contains("clone110_bio1")),na.rm = TRUE),
+                  clone110_bio2 = rowMeans(dplyr::select(FUS_norm,contains("clone110_bio2")),na.rm = TRUE),
+                  clone110_bio3 = rowMeans(dplyr::select(FUS_norm,contains("clone110_bio3")),na.rm = TRUE)) %>%
+           dplyr::select(Protein.Accession,U2OS_bio1,U2OS_bio2,U2OS_bio3,clone110_bio1,clone110_bio2, clone110_bio3,
+                         U2OS_bio1_r1,U2OS_bio1_r2,U2OS_bio2_r1,U2OS_bio2_r2,U2OS_bio3_r1,U2OS_bio3_r2, clone110_bio1_r1,
+                         clone110_bio1_r2,clone110_bio2_r1,clone110_bio2_r2, clone110_bio3_r1, clone110_bio3_r2,WT_Mean, KO_Mean,fc_log2, Fold.Change, pvalue_log)%>%
+            distinct()
+```
+
+## 3. GSEA analysis
+### 3.1 Annotation info
+```{r}
+keytypes(org.Hs.eg.db)
+```
+
+```{r}
+UNIPORT2symbol <- AnnotationDbi::select(org.Hs.eg.db,
+                                    key=as.character(FUS_norm_1$Protein.Accession),
+                                    columns="SYMBOL",
+                                    keytype="UNIPROT")
+UNIPORT2symbol <- as.tibble(UNIPORT2symbol)
+head(UNIPORT2symbol)
+```
+
+
+```{r}
+FUS_norm_2 <-dplyr::left_join(FUS_norm_1,UNIPORT2symbol, by =c("Protein.Accession"="UNIPROT") )%>%
+              distinct()%>%
+              drop_na()
+FUS_norm_3<- dplyr::rename(FUS_norm_2,UNIPROT=Protein.Accession)%>%
+             arrange(-fc_log2)
+FUS_norm_x <-dplyr::left_join(FUS_norm_3,FUS_PSMs_raw, by =c("UNIPROT"="UNIPROT") )%>%
+              distinct()
+head(FUS_norm_x)
+# write.csv(FUS_norm_x,file = "results/FUS_norm_x.csv")
+```
+
+```{r}
+FUS_norm_x%>%
+group_by(UNIPROT) %>% dplyr::filter(n()>1) %>% summarize(n=n())
+```
+
+```{r}
+res2 <- FUS_norm_x %>% 
+  dplyr::select(SYMBOL, fc_log2) %>% 
+  drop_na() %>% 
+  distinct() %>% 
+  group_by(SYMBOL) %>% 
+  summarize(fc_log2=mean(fc_log2))
+head(res2)
+```
+
+### 3.2 Analysis by fgsea
+
+```{r}
+ranks <- deframe(res2)
+head(ranks, 20)
+barplot(sort(ranks, decreasing = T))
+```
+
+```{r}
+set.seed(12)
+pathways.GO.BP <- gmtPathways("MSigDB/c5.bp.v6.2.symbols.gmt")
+FUS_GSEA_BP<-fgsea(pathways=gmtPathways("MSigDB/c5.bp.v6.2.symbols.gmt"), ranks, 
+                           nperm=100000,
+                           minSize = 15,
+                           maxSize = 200
+                              )%>% 
+                            arrange(padj)
+```
+
+
+```{r}
+FUS_GSEA_BP_tab<-FUS_GSEA_BP%>%
+               as_tibble() %>%
+               arrange(desc(NES))%>%
+               dplyr::select(-ES,pval,-nMoreExtreme)%>%
+               dplyr::filter(NES >0)
+               as_tibble() %>%
+              arrange(padj)
+```
+
+```{r}
+Go_BP_01<- FUS_GSEA_BP_tab %>%
+              dplyr::filter(padj <0.01)%>%
+              mutate(nLeadingEdge=lengths(leadingEdge),GeneRatio=lengths(leadingEdge)/size, term= substring(pathway,4))%>%
+              distinct()%>%
+              arrange(-NES)
+# fwrite(Go_BP_01, file="results/Go_BP_01.txt", sep="\t", sep2=c("", " ", ""))
+```
+
+```{r}
+Go_BP_01$log10_padj <- -log10(Go_BP_01$padj)
+```
+
+```{r fig.height=10, fig.width=10}
+go_dot<- ggplot(Go_BP_01, aes(NES,term))
+go_dot+
+  geom_point(aes(color=padj, size=GeneRatio))+
+  scale_color_viridis()+
+  theme_bw()
+graph2pdf(file="results/GSEA_GO_BP_All.pdf", width=10, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+### 3.3 Dot plots
+
+```{r}
+FUS_replication <- Go_BP_01 %>%
+                   dplyr::filter(str_detect(term,"REPLICATION"))
+```
+
+```{r}
+FUS_repair <- Go_BP_01 %>%
+                   dplyr::filter(str_detect(term,"REPAIR"))
+```
+
+```{r fig.height=4, fig.width=8}
+library(export)
+go_dot_replication<- ggplot(FUS_replication, aes(NES,term))
+
+go_dot_replication+
+  geom_point(aes(color=padj, size=GeneRatio))+
+  scale_color_viridis_c()+#option="plasma","magma", "cividis","inferno","viridis"
+  theme_bw()
+graph2pdf(file="results/DNA_replication.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+```{r}
+go_dot_repair<- ggplot(FUS_repair, aes(NES,term))
+
+go_dot_repair+
+  geom_point(aes(color=padj, size=GeneRatio))+
+  scale_color_viridis_c()+#option="plasma","magma", "cividis","inferno","viridis"
+  theme_bw()
+graph2pdf(file="results/DNA_repair.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+### 3.4 Heatmap plots
+```{r}
+DNA_REPLICATION.Leading<-Go_BP_01 %>% 
+             dplyr::filter(pathway == "GO_DNA_REPLICATION")%>%
+             dplyr::select(leadingEdge)%>%
+             unnest()%>% 
+             dplyr::rename(SYMBOL=leadingEdge)%>%
+             inner_join(FUS_norm_x, by="SYMBOL")%>% 
+             distinct()
+
+```
+
+```{r}
+DNA_REPLICATION.Leading.all<-DNA_REPLICATION.Leading%>%
+                        dplyr::mutate(GO_Terms="DNA_REPLICATION")%>%
+                         column_to_rownames(var ="SYMBOL")
+### Filter genes based on padj<0.05
+DNA_REPLICATION.Leading.sig <-DNA_REPLICATION.Leading %>%
+                        dplyr::mutate(GO_Terms="DNA_REPLICATION")%>%
+                          dplyr::filter(fc_log2>= 0.42)%>%
+                          # dplyr::filter(WT_Mean >= 23.5)%>% ##(WT_Mean: 23.5 cutoff based on PCNA)
+                          dplyr::filter(PSMs_ave >= 5)%>%
+                         column_to_rownames(var ="SYMBOL")
+```
+
+
+```{r fig.height=10, fig.width=8}
+dna.replication.out.all<- pheatmap(DNA_REPLICATION.Leading.all[2:7], 
+         color = inferno(12),
+         clustering_method = "ward.D2",
+         cluster_rows = T,
+         cluster_cols = F,
+         show_rownames =T ,
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row", 
+         cutree_rows = 3,
+         cutree_cols = 3,
+         fontsize_row = 6, 
+         height = 20)
+
+```
+
+```{r fig.height=6, fig.width=8}
+mat<- DNA_REPLICATION.Leading.sig[2:7]
+dna.replication.out.sig<- pheatmap(mat,
+         color = inferno(12), ## use color from viridis package: the value 10 represents 10 different colors; options: viridis, magma, plasma, inferno, cividis.
+         clustering_method = "ward.D2",
+         # mat = log2(mat),
+         cluster_rows = T,
+         cluster_cols = F,
+         show_rownames =T ,
+         border_color = NA, 
+         fontsize = 10,
+         scale = "row",
+         cutree_cols = 3,
+         fontsize_row = 6, 
+         main = "DNA Replication Related Proteins",
+         height = 20)
+graph2pdf(file="results/DNA_replication_heatmap_sig.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+```{r}
+DNA_REPAIR.Leading<-Go_BP_01 %>% 
+             dplyr::filter(pathway == "GO_DNA_REPAIR")%>%
+             dplyr::select(leadingEdge)%>%
+             unnest()%>% 
+             dplyr::rename(SYMBOL=leadingEdge)%>%
+             inner_join(FUS_norm_x, by="SYMBOL")%>% 
+             distinct()
+```
+
+```{r}
+DNA_REPAIR.Leading.all<-DNA_REPAIR.Leading%>%
+                        dplyr::mutate(GO_Terms="DNA_REPAIR")%>%
+                         column_to_rownames(var ="SYMBOL")
+### Filter genes based on padj<0.05
+DNA_REPAIR.Leading.sig <-DNA_REPAIR.Leading %>%
+                          dplyr::mutate(GO_Terms="DNA_REPAIR")%>%
+                          dplyr::filter(fc_log2>= 0.42)%>%
+                          dplyr::filter(PSMs_ave >= 5)%>% ##(WT_Mean: 23.5 cutoff based on PCNA)
+                         column_to_rownames(var ="SYMBOL")
+```
+
+```{r fig.height=10, fig.width=8}
+dna.repair.out.sig<- pheatmap(DNA_REPAIR.Leading.sig[2:7], 
+         color = inferno(12), ## use color from viridis package: the value 10 represents 10 different colors; options: viridis, magma, plasma, inferno, cividis.
+         clustering_method = "ward.D2",
+         cluster_rows = T,
+         cluster_cols = F,
+         show_rownames =T ,
+         border_color = NA, 
+         fontsize = 10,
+         scale = "row",
+         cutree_cols = 3,
+         fontsize_row = 6, 
+         main = "DNA Repair Related Proteins",
+         height = 20)
+graph2pdf(file="results/DNA_repair_heatmap_sig.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+### 3.5 GSEA plots
+
+```{r}
+plotEnrichment(pathways.GO.BP[["GO_DNA_REPLICATION"]],
+               ranks) + labs(title="GO_DNA_REPLICATION")
+graph2pdf(file="results/GSEA_DNA_Replication.pdf", width=6, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+
+```{r}
+plotEnrichment(pathways.GO.BP[["GO_DNA_REPAIR"]],
+               ranks) + labs(title="GO_DNA_REPAIR")
+graph2pdf(file="results/GSEA_DNA_Repair.pdf", width=6, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+```{r}
+plotEnrichment(pathways.GO.BP[["GO_SPLICEOSOMAL_COMPLEX_ASSEMBLY"]],
+               ranks) + labs(title="GO_SPLICEOSOMAL_COMPLEX_ASSEMBLY")
+graph2pdf(file="results/GSEA_SPLICEOSOMAL_COMPLEX_ASSEMBLY.pdf", width=6, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+### 3.6 Scatter plot
+
+```{r fig.height=6, fig.width=8}
+
+DNA_Replication_Repair_sig <- bind_rows(DNA_REPLICATION.Leading.sig,DNA_REPAIR.Leading.sig)
+
+DNA_Replication_Repair_sig<-dplyr::left_join(DNA_Replication_Repair_sig,UNIPORT2symbol, by =c("UNIPROT"="UNIPROT") )
+
+ggscatter(DNA_Replication_Repair_sig, y ="pvalue_log", x= "Fold.Change",
+          color = "GO_Terms",
+          palette="npg",
+          # shape="GO_Terms",
+          # ellipse = TRUE,
+          # ellipse.type = "convex",
+          label = "SYMBOL",
+          repel = TRUE,
+          size = "Unique_ave",
+          alpha = 0.5,
+          xlab = "Fold Change(WT vs KO)",
+          ylab = "-Log10(p value)"
+          ) +
+  xlim(1, 2.5)+
+  geom_vline(xintercept = 1.3, linetype="dotted", 
+                color = "grey", size=1)+
+  geom_hline(yintercept=1.30103, linetype="dotted", 
+                color = "grey", size=1)
+
+graph2pdf(file="results/GSEA_Scatterplot.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+```{r}
+sessionInfo()
+```
