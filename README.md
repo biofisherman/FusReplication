@@ -2,7 +2,7 @@
 ## Code for figures:
 * __Fig. 6A and Sup. Fig. 7:__ [Analysis of FUS MS/MS data](/fig_FUS_MS.md)
   * [RMD file](code/fig_FUS_MS.Rmd).
-  * [MSigDB for biological processing(c5.bp.v6.2.symbols.gmt)](code/).
+  * [MSigDB for biological processing(c5.bp.v6.2.symbols.gmt)](data/).
   * [raw data of AllResultsOfQuantification_FUS.csv](data/AllResultsOfQuantification_FUS.csv).
   * [raw data of PSMs_FUS.csv](data/PSMs_FUS.csv).
 * __Fig. 6E:__ [Quantification results of PLA_FUS](/Fig_PLA_FUS.md)
