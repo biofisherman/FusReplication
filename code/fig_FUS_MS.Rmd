@@ -334,6 +334,33 @@ ggscatter(DNA_Replication_Repair_sig, y ="pvalue_log", x= "Fold.Change",
 graph2pdf(file="results/GSEA_Scatterplot.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
 ```
 
+```{r fig.height=6, fig.width=8}
+
+DNA_Replication_Repair_comb <- bind_rows(DNA_REPLICATION.Leading.sig,DNA_REPAIR.Leading.sig)%>%
+                               dplyr::select(-GO_Terms)
+                              
+
+DNA_Replication_Repair_comb<-dplyr::left_join(DNA_Replication_Repair_comb,UNIPORT2symbol, by =c("UNIPROT"="UNIPROT") )%>%
+                             distinct()
+
+ggscatter(DNA_Replication_Repair_comb, y ="pvalue_log", x= "Fold.Change",
+          palette="npg",
+          label = "SYMBOL",
+          repel = TRUE,
+          size = "Unique_ave",
+          alpha = 0.5,
+          xlab = "Fold Change(WT vs KO)",
+          ylab = "-Log10(p value)"
+          ) +
+  xlim(1, 2.5)+
+  geom_vline(xintercept = 1.3, linetype="dotted", 
+                color = "grey", size=1)+
+  geom_hline(yintercept=1.30103, linetype="dotted", 
+                color = "grey", size=1)
+
+graph2pdf(file="results/GSEA_Scatterplot.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
 ```{r}
 sessionInfo()
 ```

@@ -9,14 +9,14 @@ Weiyan
 library("tidyverse")
 ```
 
-    ## ── Attaching packages ───────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.3.0 ──
+    ## ── Attaching packages ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.3.0 ──
 
     ## ✓ ggplot2 3.3.0     ✓ purrr   0.3.3
     ## ✓ tibble  2.1.3     ✓ dplyr   0.8.5
     ## ✓ tidyr   1.0.2     ✓ stringr 1.4.0
     ## ✓ readr   1.3.1     ✓ forcats 0.5.0
 
-    ## ── Conflicts ──────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ── Conflicts ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
     ## x dplyr::filter() masks stats::filter()
     ## x dplyr::lag()    masks stats::lag()
 
@@ -680,6 +680,38 @@ ggscatter(DNA_Replication_Repair_sig, y ="pvalue_log", x= "Fold.Change",
 ```
 
 ![](fig_FUS_MS_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+
+``` r
+graph2pdf(file="results/GSEA_Scatterplot.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+    ## Exported graph as results/GSEA_Scatterplot.pdf
+
+``` r
+DNA_Replication_Repair_comb <- bind_rows(DNA_REPLICATION.Leading.sig,DNA_REPAIR.Leading.sig)%>%
+                               dplyr::select(-GO_Terms)
+                              
+
+DNA_Replication_Repair_comb<-dplyr::left_join(DNA_Replication_Repair_comb,UNIPORT2symbol, by =c("UNIPROT"="UNIPROT") )%>%
+                             distinct()
+
+ggscatter(DNA_Replication_Repair_comb, y ="pvalue_log", x= "Fold.Change",
+          palette="npg",
+          label = "SYMBOL",
+          repel = TRUE,
+          size = "Unique_ave",
+          alpha = 0.5,
+          xlab = "Fold Change(WT vs KO)",
+          ylab = "-Log10(p value)"
+          ) +
+  xlim(1, 2.5)+
+  geom_vline(xintercept = 1.3, linetype="dotted", 
+                color = "grey", size=1)+
+  geom_hline(yintercept=1.30103, linetype="dotted", 
+                color = "grey", size=1)
+```
+
+![](fig_FUS_MS_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 ``` r
 graph2pdf(file="results/GSEA_Scatterplot.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
