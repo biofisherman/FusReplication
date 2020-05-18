@@ -578,8 +578,7 @@ summary(res_REvsKO_shrunken, alpha = 0.05)
     ## [1] see 'cooksCutoff' argument of ?results
     ## [2] see 'independentFiltering' argument of ?results
 
-### 4.4.2 Extracting significant differentially expressed genes **WT
-vs KO**
+### 4.4.2 Extracting significant differentially expressed genes **WT vs KO**
 
 ``` r
 ### Set thresholds
