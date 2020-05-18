@@ -27,3 +27,11 @@
 * __Sup. Fig. 2D:__ [IRIF of BRCA1 in CyclinA postive cells](/fig_IRIF_BRCA1_CyclinA.md)
   * [Rmd file](code/fig_IRIF_BRCA1_CyclinA.Rmd).
   * [raw data](data/IRIF_BRCA1_CyclinA.csv).
+* __Sup. Fig. 5A and B:__ [RNA SEQ analysis of FUS](/Fig_FUS_RnaSeqDESeq2.md)
+  * [Rmd file](code/Fig_FUS_RnaSeqDESeq2.Rmd).
+  * [Count Matrix by FeatureCounts](data/fus_featurecounts.txt.Rmatrix.txt).
+  * [Normalized RNA-seq counts by DESeq2](data/normalized_counts.csv).
+  * [FUS specific regulated genes](data/FusSpeRegulatedGenes.csv).
+  * [DEG list of WT and KO cells](data/sigWTvsKO_DESeq2.csv).
+  * [DEG list of WT and RE cells](data/sigWTvsRE_DESeq2.csv).
+  * [DEG list of RE and KO cells](data/sigREvsKO_DESeq2.csv).

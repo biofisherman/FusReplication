@@ -1,0 +1,545 @@
+---
+title: "FUS RNA-Seq Analysis by DESeq2"
+author: "Weiyan"
+date: "4/13/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# 1. Prepare count matrix
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggrepel)
+library(RColorBrewer)
+library(DESeq2)
+library(pheatmap)
+library(annotables)
+library(export)
+library(org.Hs.eg.db)
+library(DOSE)
+library(pathview)
+library(clusterProfiler)
+library(AnnotationHub)
+library(ensembldb)
+```
+
+
+## 1.1 Import metadata
+
+```{r}
+dir <- "/Users/weiyanjia/Desktop/RNA_Seq/R_Analysis/FeatureCounts/FUS_FeatureCounts/FUS_DESeq2/"
+# list.files(dir)
+colData <- read.table(file.path(dir, "coldata.txt"), header = TRUE)
+colData <- dplyr::select(colData, group, CellLine)
+ID <- as.factor(c("W_1","W_2","W_3","KO_1","KO_2","KO_3","RE_1","RE_2","RE_3"))
+colData$ID <- ID
+colData
+```
+
+## 1.2 Import featurecounts data
+
+```{r}
+# getwd()
+countData<- read.delim("fus_featurecounts.txt.Rmatrix.txt", header = TRUE, sep="\t",row.names = "Geneid")%>% 
+  dplyr::select(W_1, W_2, W_3, C_1, C_2, C_3, F_1, F_2, F_3)%>%
+  as.matrix()
+countData <- countData[rowSums(countData)>=10, ]
+head(countData)
+```
+
+## 1.3 Set up the DESeqDataSet Object
+
+```{r}
+dds = DESeqDataSetFromMatrix(countData=countData,
+                              colData=colData,
+                              design=~group)
+dds
+nrow(dds)
+# View(counts(dds))
+```
+
+# 2. Normalization
+
+## 2.1 Estimate size factors
+```{r}
+dds <- estimateSizeFactors(dds)
+## Check the size factors
+sizeFactors(dds)
+```
+
+Total number of raw counts per sample
+```{r}
+colSums(counts(dds))
+```
+
+Total number of normalized counts per sample
+```{r}
+colSums(counts(dds, normalized=T))
+```
+
+## 2.2 retrieve the normalized counts matrix from dds
+```{r}
+# getwd()
+normalized_counts <- counts(dds, normalized=TRUE)
+write.table(normalized_counts, file="results/normalized_counts.txt", sep="\t", quote=F, col.names=NA)
+# normalized_counts
+```
+
+>**NOTE:** DESeq2 doesn’t actually use normalized counts, rather it uses the raw counts and models the normalization inside the Generalized Linear Model (GLM). These normalized counts will be useful for downstream visualization of results, but cannot be used as input to DESeq2 or any other tools that peform differential expression analysis which use the negative binomial model.
+
+#3. Quality Control (Sample-level QC)
+
+##3.1 Transform counts for data visualization
+
+```{r}
+rld <- rlog(dds, blind=TRUE)
+```
+
+## 3.2 Plot PCA
+
+```{r}
+plotPCA(rld, intgroup=c("CellLine"))
+graph2pdf(file="figures/FUS_RNA_SEQ_PCA1.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+** custom plot with ggplot2**
+```{r}
+library(ggplot2)
+PcaData <- plotPCA(rld, intgroup="group", returnData=TRUE)
+percentVar <- 100*round(attr(PcaData, "percentVar"),2)
+PcaData
+```
+
+```{r}
+ggplot(PcaData, aes(x = PC1, y = PC2, color = name, shape = group)) +
+  geom_point(size =3) +
+  xlab(paste0("PC1: ", percentVar[1], "% variance")) +
+  ylab(paste0("PC2: ", percentVar[2], "% variance")) +
+  coord_fixed()+
+  theme_bw()
+graph2pdf(file="figures/FUS_RNA_SEQ_PCA.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+# 4.0 Differential expression analysis with DESeq2
+## 4.1 Run analysis 
+
+```{r}
+dds <- DESeq(dds)
+```
+
+## 4.2 exploring the dispersion estimates and assessing model fit
+
+```{r}
+## Plot dispersion estimates
+plotDispEsts(dds)
+```
+
+## 4.3 Results table
+
+###4.3.1 WT vs KO
+
+```{r}
+## Define contrasts, extract results table, and shrink the log2 fold changes
+contrast_ko <- c("group", "WT", "KO")
+
+res_WTvsKO_unshrunken <- results(dds, contrast=contrast_ko, alpha = 0.05)
+
+res_WTvsKO_shrunken <- lfcShrink(dds, contrast=contrast_ko, res=res_WTvsKO_unshrunken)
+
+library(apeglm)
+resultsNames(dds)
+res_WTvsKO_shrunken_apeglm <- lfcShrink(dds, coef ="group_WT_vs_KO", type= "apeglm")
+# res_WTvsKO_shrunken_apeglm <- lfcShrink(dds, contrast=contrast_ko, res=res_WTvsKO_unshrunken, type= "apeglm")
+```
+
+```{r}
+res_WTvsKO_shrunken_tb <- res_WTvsKO_shrunken %>%
+  data.frame() %>%
+  rownames_to_column(var="gene") %>% 
+  as_tibble()
+```
+
+
+```{r}
+Glimma_data <- res_WTvsKO_shrunken_tb %>%
+               left_join(grch38[, c("ensgene", "symbol")], by=c("gene" = "ensgene"))%>%
+               distinct()%>%
+               column_to_rownames(var = "gene")
+
+library("Glimma")
+status <- as.numeric(Glimma_data$padj < 0.05)
+anno <- data.frame(GeneID=rownames(Glimma_data), symbol=Glimma_data$symbol)
+glMDPlot(res_WTvsKO_shrunken, status=status, counts=counts(dds,normalized=TRUE),  ##res_WTvsKO_shrunken_apeglm or res_WTvsKO_shrunken
+         groups=dds$group, transform=FALSE,
+         samples=colnames(dds), anno=anno,
+         folder="glimma_shrunken", 
+         launch=FALSE)
+
+glMDPlot(res_WTvsKO_unshrunken, status=status, counts=counts(dds,normalized=TRUE),  ##res_WTvsKO_shrunken_apeglm or res_WTvsKO_shrunken
+         groups=dds$group, transform=FALSE,
+         samples=colnames(dds), anno=anno,
+         folder="glimma_unshrunken", 
+         launch=FALSE)
+
+```
+
+**MA Plot**
+**The unshrunken results:**
+```{r}
+plotMA(res_WTvsKO_unshrunken, ylim=c(-3,3))
+```
+
+**The shrunken results:**
+```{r}
+plotMA(res_WTvsKO_shrunken, ylim=c(-3,3))
+```
+
+**results exploration**
+```{r}
+class(res_WTvsKO_shrunken)
+```
+
+```{r}
+mcols(res_WTvsKO_shrunken, use.names=T)
+```
+
+```{r}
+head(res_WTvsKO_shrunken)
+```
+
+>**NOTE: on p-values set to NA**
+1. If within a row, all samples have zero counts, the baseMean column will be zero, and the log2 fold change estimates, p-value and adjusted p-value will all be set to NA.
+2. If a row contains a sample with an extreme count outlier then the p-value and adjusted p-value will be set to NA. These outlier counts are detected by Cook’s distance.
+3. If a row is filtered by automatic independent filtering, for having a low mean normalized count, then only the adjusted p-value will be set to NA.
+
+###4.3.2 WT vs RE
+
+```{r}
+## Define contrasts, extract results table, and shrink the log2 fold changes
+contrast_re <- c("group", "WT", "RE")
+res_WTvsRE_unshrunken <- results(dds, contrast=contrast_re, alpha = 0.05)
+res_WTvsRE_shrunken <- lfcShrink(dds, contrast=contrast_re, res=res_WTvsRE_unshrunken)
+res_WTvsKO_shrunken_apeglm <- lfcShrink(dds, coef ="group_WT_vs_KO", type= "apeglm")
+
+```
+
+**MA Plot**
+**The unshrunken results:**
+```{r}
+plotMA(res_WTvsRE_unshrunken, ylim=c(-3,3))
+plotMA(res_WTvsRE_shrunken, ylim=c(-3,3))
+```
+**results exploration**
+```{r}
+class(res_WTvsRE_shrunken)
+```
+
+```{r}
+mcols(res_WTvsRE_shrunken, use.names=T)
+```
+
+```{r}
+head(res_WTvsRE_shrunken)
+```
+
+###4.3.2 RE vs KO
+
+```{r}
+## Define contrasts, extract results table, and shrink the log2 fold changes
+contrast_re.ko <- c("group", "RE", "KO")
+
+res_REvsKO_unshrunken <- results(dds, contrast=contrast_re.ko, alpha = 0.05)
+
+res_REvsKO_shrunken <- lfcShrink(dds, contrast=contrast_re.ko, res=res_REvsKO_unshrunken)
+```
+
+**MA Plot**
+**The unshrunken results:**
+```{r}
+plotMA(res_REvsKO_unshrunken, ylim=c(-3,3))
+plotMA(res_REvsKO_shrunken, ylim=c(-3,3))
+```
+**results exploration**
+```{r}
+class(res_REvsKO_shrunken)
+```
+
+```{r}
+mcols(res_REvsKO_shrunken, use.names=T)
+```
+
+```{r}
+head(res_REvsKO_shrunken)
+```
+
+## 4.4 Summarizing results
+###4.4.1 Summarize results
+```{r}
+## Summarize results
+summary(res_WTvsKO_shrunken, alpha = 0.05)
+summary(res_WTvsRE_shrunken, alpha = 0.05)
+summary(res_REvsKO_shrunken, alpha = 0.05)
+```
+
+###4.4.2 Extracting significant differentially expressed genes
+**WT vs KO**
+```{r}
+### Set thresholds
+padj.cutoff <- 0.05
+```
+
+```{r}
+sigWTvsKO <- res_WTvsKO_shrunken_tb %>%
+        dplyr::filter(padj < padj.cutoff)
+sigWTvsKO_DESeq2 <- merge(sigWTvsKO, grch38[, c("ensgene", "symbol")], by.x="gene", by.y="ensgene")
+head(sigWTvsKO_DESeq2)
+write.csv(sigWTvsKO_DESeq2, "results/sigWTvsKO_DESeq2.csv")
+```
+**WT vs RE**
+
+```{r}
+res_WTvsRE_shrunken_tb <- res_WTvsRE_shrunken %>%
+  data.frame() %>%
+  rownames_to_column(var="gene") %>% 
+  as_tibble()
+sigWTvsRE <- res_WTvsRE_shrunken_tb %>%
+        dplyr::filter(padj < padj.cutoff)
+```
+
+```{r}
+sigWTvsRE_DESeq2 <- merge(sigWTvsRE, grch38[, c("ensgene", "symbol")], by.x="gene", by.y="ensgene")
+head(sigWTvsRE_DESeq2)
+write.csv(sigWTvsRE_DESeq2, "results/sigWTvsRE_DESeq2.csv")
+```
+
+**RE vs KO**
+
+```{r}
+res_REvsKO_shrunken_tb <- res_REvsKO_shrunken %>%
+  data.frame() %>%
+  rownames_to_column(var="gene") %>% 
+  as_tibble()
+sigREvsKO <- res_REvsKO_shrunken_tb %>%
+        dplyr::filter(padj < padj.cutoff)
+```
+
+```{r}
+sigREvsKO_DESeq2 <- merge(sigREvsKO, grch38[, c("ensgene", "symbol")], by.x="gene", by.y="ensgene")
+head(sigREvsKO_DESeq2)
+write.csv(sigREvsKO_DESeq2, "results/sigREvsKO_DESeq2.csv")
+```
+
+
+# 5 Visualizing the results
+
+We will be working with three different data objects we have already created in earlier lessons:
+
+1. Metadata for our samples (a dataframe): colData
+2. Normalized expression data for every gene in each of our samples (a matrix): normalized_counts
+3. Tibble versions of the DESeq2 results we generated in the last lesson: res_WTvsKO_shrunken_tb, res_WTvsRE_shrunken_tb and res_REvsKO_shrunken_tb
+
+## 5.1 create a tibble object from the ```normalized_counts``` data frame
+
+```{r}
+# DESeq2 creates a matrix when you use the counts() function
+## First convert normalized_counts to a data frame and transfer the row names to a new column called "gene"
+normalized_counts <- counts(dds, normalized=T) %>% 
+  data.frame() %>%
+  rownames_to_column(var="gene") 
+  
+# Next, merge together (ensembl IDs) the normalized counts data frame with 
+#	a subset of the annotables grch38 data frame (only the columns for ensembl gene IDs and gene symbols)
+## This will bring in a column of gene symbols
+normalized_counts <- merge(normalized_counts, grch38[, c("ensgene", "symbol")], by.x="gene", by.y="ensgene")
+
+# Now create a tibble for the normalized counts
+normalized_counts <- normalized_counts %>%
+  as_tibble()
+
+# normalized_counts
+write.csv(normalized_counts, "results/normalized_counts.csv",row.names = FALSE)
+```
+
+### 5.2 VennDiagram
+
+```{r}
+library(ggsci)
+library(dplyr)
+library(VennDiagram)
+
+WTvsKO<-sigWTvsKO_DESeq2$gene
+REvsKO<-sigREvsKO_DESeq2$gene
+WTvsRE<-sigWTvsRE_DESeq2$gene
+vennData <-list(WTvsKO,REvsKO,WTvsRE)
+names(vennData)<- c("WTvsKO","REvsKO","WTvsRE")
+
+# length(WTvsRE)
+
+#Make the plot
+venn<-venn.diagram(
+  vennData,
+  category.names = c("WTvsKO (2598)" , "REvsKO (2056)" , "WTvsRE (2529)"),
+  filename = NULL,
+  # filename = 'figures/venn.tiff',
+  # output = TRUE ,
+  #         imagetype="tiff" ,
+          height = 800 , 
+          width = 800 , 
+          resolution = 300,
+          compression = "lzw",
+          lwd = 1,
+          col=c("#440154ff", '#21908dff', '#fde725ff'),
+          fill = c(alpha("#440154ff",0.3), alpha('#21908dff',0.3), alpha('#fde725ff',0.3)),
+          cex = 0.5,
+          fontfamily = "sans",
+          cat.cex = 0.3,
+          cat.default.pos = "outer",
+          cat.pos = c(-27, 27, 135),
+          cat.dist = c(0.055, 0.055, 0.085),
+          cat.fontfamily = "sans",
+          cat.col = c("#440154ff", '#21908dff', '#fde725ff'),
+          rotation = 1
+        )
+grid.draw(venn)
+graph2pdf(file="figures/venn.pdf", width=8, height =8,font = "Arial",bg = "transparent")
+```
+
+### 5.3 heatmap
+
+In addition to plotting subsets, we could also extract the normalized values of all the significant genes and plot a heatmap of their expression using ```pheatmap()```.
+
+```{r}
+### Extract normalized expression for significant genes from the WT and KO samples (2:4 and 8:10)
+norm_sigWTvsKO <- normalized_counts[,c(1:10)] %>%  ## subset samples by: normalized_counts[,c(1:4, 5:7)]
+              dplyr::filter(gene %in% sigWTvsKO$gene)  
+head(norm_sigWTvsKO)
+```
+
+draw the heatmap using ```pheatmap```:
+```{r fig.height=10, fig.width=5}
+library(pheatmap)
+ann.sample <- dplyr::select(colData,group)
+### Set a color palette
+heat_colors <- brewer.pal(6, "YlOrRd")
+
+### Run pheatmap using the metadata data frame for the annotation
+pheatmap(norm_sigWTvsKO[2:10], 
+         # color = heat_colors, 
+         cluster_rows = T, 
+         show_rownames = F,
+         clustering_method = "ward.D2",
+         annotation = ann.sample, 
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row", 
+         cutree_rows = 4,
+         cutree_cols = 3,
+         fontsize_row = 10, 
+         height = 20)
+graph2pdf(file="figures/sigWTvsKO.genes.heatmap.pdf", width=5, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+#6 Function analysis of FUS Specific regulated genes
+
+**Overlapping gene list of WTvsKO and RTvsKO**
+
+```{r}
+## intersect between WTvsKO and REvsKO
+WTandRE <- intersect(WTvsKO,REvsKO)
+summary(WTandRE)
+
+WTandRE_1 <- data.frame(WTandRE, row.names = NULL)
+
+WTandRE_2 <- merge(WTandRE_1, grch38[, c("ensgene", "symbol", "entrez")], by.x="WTandRE", by.y="ensgene")%>% 
+                       as.tibble()%>%
+                       dplyr::rename(ensgene = WTandRE )
+
+WTandRE_2<- WTandRE_2[which(duplicated(WTandRE_2$ensgene) == F), ] %>%
+                      dplyr::mutate(ensgene=as.character(ensgene))
+  
+summary(WTandRE_2)
+
+WTandRE_DESeq2 <- dplyr::left_join(WTandRE_2,normalized_counts,  by=c("ensgene" = "gene")) %>% 
+                            dplyr::distinct()
+## Prepare foldchange and padj information for tables joint
+
+sigWTvsKO_1 <- sigWTvsKO %>% dplyr::select(gene, log2FoldChange, padj)%>%
+                            dplyr::rename(WTvsKOlog2FoldChange=log2FoldChange, WTvsKOpadj=padj )
+
+sigREvsKO_1 <- sigREvsKO %>% dplyr::select(gene, log2FoldChange, padj)%>%
+                            dplyr::rename(REvsKOlog2FoldChange=log2FoldChange, REvsKOpadj=padj )
+sigWTvsRE_1 <- res_WTvsRE_shrunken_tb %>% dplyr::select(gene, log2FoldChange, padj)%>%
+                           dplyr:: rename(WTvsRElog2FoldChange=log2FoldChange, WTvsREpadj=padj )
+## joint foldchange and padj information
+WTandRE_DESeq2_X <- dplyr::left_join(WTandRE_DESeq2, sigWTvsKO_1,  by=c("ensgene" = "gene")) %>% 
+                              dplyr::left_join(., sigREvsKO_1,  by=c("ensgene" = "gene"))%>%
+                              dplyr::left_join(., sigWTvsRE_1,  by=c("ensgene" = "gene"))%>%
+                              dplyr::distinct()%>%
+                              dplyr::select(-symbol.y)%>%
+                              dplyr::rename(symbol=symbol.x)
+## Clean out the genes in RE sample with different changing direction compared with WT.
+WTandRE_DESeq2_X2 <-WTandRE_DESeq2_X%>%
+                    dplyr::mutate(WT_KO_sign=(sign(WTvsKOlog2FoldChange)))%>%
+                    dplyr::mutate(RE_KO_sign=(sign(REvsKOlog2FoldChange)))%>%
+                    dplyr::mutate(diff=WT_KO_sign-RE_KO_sign)%>%
+                    dplyr::filter(diff==0)
+write.csv(WTandRE_DESeq2_X2, "results/FusSpeRegulatedGenes.csv")
+length(WTandRE_DESeq2_X$symbol)
+```
+
+**Heatmap of gene list of WTvsKO and RTvsKO**
+
+```{r fig.height=8, fig.width=5}
+subset_WTandRE_DESeq2_X2 <- WTandRE_DESeq2_X2 %>%
+                   dplyr::select(symbol, c(4:12))%>%
+                   column_to_rownames(var ="symbol")
+
+### Run pheatmap using the metadata data frame for the annotation
+pheatmap(subset_WTandRE_DESeq2_X2, 
+         # color = heat_colors, 
+         clustering_method = "ward.D2",
+         cluster_rows = T,
+         show_rownames =F ,
+         annotation = ann.sample,
+         # annotation_row = my_gene_col,
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row",
+         cutree_rows = 2,
+         cutree_cols = 3,
+         # kmeans_k = 2,X
+         fontsize_row = 5, 
+         height = 20)
+graph2pdf(file="figures/FusSpeRegulatedGenesHeatmap.pdf", width=5, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+
+Biological function
+
+```{r fig.height=8, fig.width=8}
+library(clusterProfiler)
+library(org.Hs.eg.db)
+FUS_regulatedGeneList<-WTandRE_DESeq2_X2$ensgene
+FUS_regulated_ego_BP <- enrichGO(gene = FUS_regulatedGeneList, 
+                # universe = all_WTvsKO_genes,
+                keyType = "ENSEMBL",
+                OrgDb = org.Hs.eg.db, 
+                ont = "BP", 
+                pAdjustMethod = "BH", 
+                qvalueCutoff = 0.1, 
+                readable = TRUE)
+dotplot(FUS_regulated_ego_BP, showCategory=20)
+graph2pdf(file="figures/FUS_regulated_ego_BP.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+
+FUS_regulated_ego_BP_summary <- data.frame(FUS_regulated_ego_BP)
+
+write.csv(FUS_regulated_ego_BP_summary, "results/FUS_regulated_ego_BP_summary.csv")
+```
+
+```{r}
+sessionInfo()
+```
+
