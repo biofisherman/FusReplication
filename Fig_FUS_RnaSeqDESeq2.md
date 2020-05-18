@@ -76,7 +76,7 @@ nrow(dds)
 # View(counts(dds))
 ```
 
-# 2\. Normalization
+# 2 Normalization
 
 ## 2.1 Estimate size factors
 
@@ -131,9 +131,9 @@ write.table(normalized_counts, file="results/normalized_counts.txt", sep="\t", q
 > to DESeq2 or any other tools that peform differential expression
 > analysis which use the negative binomial model.
 
-\#3. Quality Control (Sample-level QC)
+# 3 Quality Control (Sample-level QC)
 
-\#\#3.1 Transform counts for data
+## 3.1 Transform counts for data
 visualization
 
 ``` r
@@ -222,8 +222,7 @@ plotDispEsts(dds)
 
 ## 4.3 Results table
 
-\#\#\#4.3.1 WT vs
-KO
+### 4.3.1 WT vs KO
 
 ``` r
 ## Define contrasts, extract results table, and shrink the log2 fold changes
@@ -364,8 +363,7 @@ head(res_WTvsKO_shrunken)
 > independent filtering, for having a low mean normalized count, then
 > only the adjusted p-value will be set to NA.
 
-\#\#\#4.3.2 WT vs
-RE
+### 4.3.2 WT vs RE
 
 ``` r
 ## Define contrasts, extract results table, and shrink the log2 fold changes
@@ -451,8 +449,7 @@ head(res_WTvsRE_shrunken)
     ## ENSG00000241860     1.1721244559187 0.241147092524008 0.550427337399438
     ## ENSG00000279928    1.08785338531931  0.27665983750532 0.592157023679869
 
-\#\#\#4.3.2 RE vs
-KO
+### 4.3.3 RE vs KO
 
 ``` r
 ## Define contrasts, extract results table, and shrink the log2 fold changes
@@ -533,7 +530,7 @@ head(res_REvsKO_shrunken)
 
 ## 4.4 Summarizing results
 
-\#\#\#4.4.1 Summarize results
+### 4.4.1 Summarize results
 
 ``` r
 ## Summarize results
@@ -581,7 +578,7 @@ summary(res_REvsKO_shrunken, alpha = 0.05)
     ## [1] see 'cooksCutoff' argument of ?results
     ## [2] see 'independentFiltering' argument of ?results
 
-\#\#\#4.4.2 Extracting significant differentially expressed genes **WT
+### 4.4.2 Extracting significant differentially expressed genes **WT
 vs KO**
 
 ``` r
@@ -776,7 +773,7 @@ graph2pdf(file="figures/venn.pdf", width=8, height =8,font = "Arial",bg = "trans
 
     ## Exported graph as figures/venn.pdf
 
-### 5.3 heatmap
+### 5.3 Heatmap
 
 In addition to plotting subsets, we could also extract the normalized
 values of all the significant genes and plot a heatmap of their
@@ -832,7 +829,7 @@ graph2pdf(file="figures/sigWTvsKO.genes.heatmap.pdf", width=5, aspectr=sqrt(2),f
 
     ## Exported graph as figures/sigWTvsKO.genes.heatmap.pdf
 
-\#6 Function analysis of FUS Specific regulated genes
+# 6 Function analysis of FUS Specific regulated genes
 
 **Overlapping gene list of WTvsKO and RTvsKO**
 
