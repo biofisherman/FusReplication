@@ -1,5 +1,5 @@
 # Fused in sarcoma regulates DNA replication timing and progression
-## Code for figures:
+## Scripts and resource data for figures:
 * __Fig. 6A and Sup. Fig. 7:__ [Analysis of FUS MS/MS data](/fig_FUS_MS.md)
   * [Rmd file](code/fig_FUS_MS.Rmd).
   * [MSigDB for biological processing(c5.bp.v6.2.symbols.gmt)](data/).
