@@ -3,7 +3,7 @@ FUS RNA-Seq Analysis by DESeq2
 Weiyan
 4/13/2020
 
-# 1\. Prepare count matrix
+# 1. Prepare count matrix
 
 ## 1.1 Import metadata
 
@@ -191,7 +191,7 @@ graph2pdf(file="figures/FUS_RNA_SEQ_PCA.pdf", width=8, aspectr=sqrt(2),font = "A
 
     ## Exported graph as figures/FUS_RNA_SEQ_PCA.pdf
 
-# 4.0 Differential expression analysis with DESeq2
+# 4 Differential expression analysis with DESeq2
 
 ## 4.1 Run analysis
 
