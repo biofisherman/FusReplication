@@ -1,0 +1,530 @@
+---
+title: "GSEA"
+author: "Weiyan"
+date: "4/1/2019"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Data preparation
+**Note:**
+
+> GSEA preranking metric:
+
+> 1. Select top 12000 genes based on adjusted P value
+  2. Run genes based on logfc shrink values from DESeq2
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(org.Hs.eg.db)
+library(DT)
+library(fgsea)
+library(data.table)
+library(ggplot2)
+library(pheatmap)
+library(RColorBrewer)
+library(dendextend)
+library(export)
+library(ggpubr)
+```
+
+
+```{r}
+WT_KO_res <-read.csv("FUS_DESeq2/results/res_WTvsKO_shrunken_tb_entrez.csv",header = TRUE)
+normalized_counts<- read.csv("FUS_DESeq2/results/normalized_counts.csv",header = TRUE)
+ann_colors = list(
+    group = c(WT = "#7570B3", KO = "#E7298A", RE = "#66A61E")
+)
+ann.sample<-  read.csv("FUS_DESeq2/results/ann.sample.csv") %>%
+              column_to_rownames(var="X")
+ann.sample_meta<- ann.sample%>%
+                  rownames_to_column(var="sampleName")
+
+```
+
+Preranking metric
+
+```{r}
+summary(WT_KO_res)
+```
+
+Map Ensembl gene IDs to symbol. First create a mapping table
+```{r}
+ens2symbol <- AnnotationDbi::select(org.Hs.eg.db,
+                                    key=as.character(WT_KO_res$gene),
+                                    columns="SYMBOL",
+                                    keytype="ENSEMBL")
+ens2symbol <- as_tibble(ens2symbol)
+head(ens2symbol)
+```
+
+Now join them
+```{r}
+WT_KO_res <- left_join(WT_KO_res, ens2symbol, by=c("gene"="ENSEMBL"))%>%
+           distinct()%>%
+           drop_na()
+```
+
+```{r}
+WT_KO_X <- WT_KO_res%>%
+           drop_na() %>% #whole table wide
+           distinct()%>%
+           arrange(padj)%>%
+           top_n(-12000,padj)
+          
+# summary(WT_KO_X) 
+# WT_KO_X%>%
+# group_by(SYMBOL) %>% dplyr::filter(n()>1) %>% summarize(n=n())
+```
+
+```{r}
+# stat related to Wald statistic and stat value corelected to log2FC, so we also can use the log2FC as input
+res2 <- WT_KO_X %>% 
+  dplyr::select(SYMBOL, log2FoldChange) %>% 
+  drop_na() %>% 
+  distinct() %>% 
+  group_by(SYMBOL) %>% 
+  summarize(log2FoldChange=mean(log2FoldChange))
+head(res2)
+```
+
+# 2. GSEA by fgsea package
+
+```{r}
+ranks <- deframe(res2)
+head(ranks, 20)
+barplot(sort(ranks, decreasing = T))
+```
+## 2.1 GO(BP) analysis
+
+```{r}
+set.seed(12)
+pathways.GO.BP <- gmtPathways("MSigDB/c5.bp.v6.2.symbols.gmt")
+WT_KO_GSEA_BP<-fgsea(pathways=gmtPathways("MSigDB/c5.bp.v6.2.symbols.gmt"), ranks, 
+                           nperm=100000,
+                           minSize = 15,
+                           maxSize = 500
+                              )%>% 
+                            arrange(padj)
+```
+
+```{r fig.height=8, fig.width=8}
+Go_BP_05<- WT_KO_GSEA_BP %>%
+              dplyr::filter(padj <0.01)%>%
+              mutate(nLeadingEdge=lengths(leadingEdge),GeneRatio=lengths(leadingEdge)/size, term= substring(pathway,4))%>%
+              dplyr::select(-ES,-nMoreExtreme)%>%
+              distinct()
+
+fwrite(Go_BP_05, file="results/Go_BP_001.txt", sep="\t", sep2=c("", " ", ""))
+              
+### NES: positive, upregulated in KO.
+p<- ggplot(Go_BP_05, aes(reorder(term, -NES), -NES)) +  ## order pathway based on NES value 
+  geom_col(aes(fill=GeneRatio)) +
+  # geom_bar(stat="identity",fill = "red")+
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title="GO_BP pathways NES from GSEA") + 
+  theme_minimal()
+# p + scale_fill_gradient(low="goldenrod2", high="firebrick3") ##scale_color_gradient for shape or scale_color_gradientn(colours = rainbow(5))
+p + scale_fill_gradient( low= brewer.pal(6, "YlOrRd"),high="firebrick3")
+graph2pdf(file="figures/FUS_GSEA_BP.pdf", width=10, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+## 2.2 Heatmap of DNA_REPLICATION pathway leading genes
+
+```{r}
+plotEnrichment(pathways.GO.BP[["GO_DNA_REPLICATION"]],
+               ranks) + labs(title="GO_DNA_REPLICATION")
+# graph2ppt(file="figures/DNA_REPLICATION.Enrichment.pptx", width =8,aspectr=sqrt(2),bg = "transparent",margins =0)
+graph2pdf(file="figures/DNA_REPLICATION.Enrichment.pptx", width=5, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+```{r}
+DNA_REPLICATION.Leading<-Go_BP_05 %>% 
+             dplyr::filter(pathway == "GO_DNA_REPLICATION")%>%
+             dplyr::select(leadingEdge)%>%
+             unnest()%>% 
+             dplyr::rename(symbol=leadingEdge)%>%
+             inner_join(normalized_counts, by="symbol")%>% 
+             distinct()
+DNA_REPLICATION.Leading.all<-DNA_REPLICATION.Leading%>%
+                         column_to_rownames(var ="symbol")
+### Filter genes based on padj<0.05
+DNA_REPLICATION.Leading.sig <-DNA_REPLICATION.Leading %>%
+                          inner_join(WT_KO_res, "symbol"="SYMBOL")%>% 
+                          dplyr::select(-SYMBOL,-gene,-baseMean,-lfcSE)%>%
+                          distinct()%>%
+                          dplyr::filter(padj< 0.05)%>%
+                         column_to_rownames(var ="symbol")
+```
+
+```{r fig.height=8, fig.width=5}
+# method for cluster:
+# the agglomeration method to be used. This should be (an unambiguous abbreviation of) one of "ward.D", "ward.D2", "single", "complete", "average" (= UPGMA), "mcquitty" (= WPGMA), "median" (= WPGMC) or "centroid" (= UPGMC).
+
+heat_colors <- brewer.pal(6, "YlOrRd")
+
+dna.rep.out.all<- pheatmap(DNA_REPLICATION.Leading.all[2:10], 
+         # color = heat_colors,
+         clustering_method = "ward.D2",
+         cluster_rows = T,
+         cluster_cols = T,
+         show_rownames =T ,
+         annotation = ann.sample, 
+         annotation_colors = ann_colors,
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row", 
+         cutree_rows = 3,
+         cutree_cols = 3,
+         fontsize_row = 6, 
+         height = 20)
+
+dna.rep_col.all<- sort(cutree(dna.rep.out.all$tree_row, k=3))%>%
+                 as.factor()%>%
+                 data.frame()%>%
+                 dplyr::rename(cluster=".")
+
+pheatmap(DNA_REPLICATION.Leading.all[2:10], 
+         # color = heat_colors,
+         clustering_method = "ward.D2",
+         cluster_rows = T,
+         cluster_cols = T,
+         show_rownames =T ,
+         annotation_col = ann.sample, 
+         annotation_row = dna.rep_col.all,
+         annotation_colors = ann_colors,
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row", 
+         cutree_rows = 3,
+         cutree_cols = 3,
+         fontsize_row = 6, 
+         height = 20)
+# graph2ppt(file="figures/DNA_REPLICATION.Leading.all.pptx", width =8,aspectr=0.5,bg = "transparent",margins =0)
+graph2pdf(file="figures/DNA_REPLICATION.Leading.all.pdf", width=5, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+
+## filted by padj
+dna.rep.out.sig = pheatmap(DNA_REPLICATION.Leading.sig[1:9], 
+         # color = heat_colors,
+         clustering_method = "ward.D2",
+         cluster_rows = T,
+         cluster_cols = T,
+         show_rownames =T ,
+         annotation_col = ann.sample, 
+         annotation_colors = ann_colors,
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row", 
+         cutree_rows = 3,
+         cutree_cols = 3,
+         fontsize_row = 10, 
+         height = 20)
+# If you want something like gene-to-cluster assignment, you can 'cut' your row dendrogram into a pre-selected number of groups as follows:
+dna.rep_col.sig<- sort(cutree(dna.rep.out.sig$tree_row, k=3))%>%
+                 as.factor()%>%
+                 data.frame()%>%
+                 dplyr::rename(cluster=".")
+
+pheatmap(DNA_REPLICATION.Leading.sig[1:9], 
+         # color = heat_colors,
+         clustering_method = "ward.D2",
+         cluster_rows = T,
+         cluster_cols = T,
+         show_rownames =T ,
+         annotation_col = ann.sample, 
+         annotation_row = dna.rep_col.sig,
+         annotation_colors = ann_colors,
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row", 
+         # # kmeans_k = 4,
+         # km=3,
+         cutree_rows = 3,
+         cutree_cols = 3,
+         fontsize_row = 10, 
+         height = 20)
+# graph2ppt(file="figures/DNA_REPLICATION.Leading.sig.pptx", width =8,aspectr=0.5,bg = "transparent",margins =0)
+graph2pdf(file="figures/DNA_REPLICATION.Leading.sig.pdf", width=5, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+## 2.3 DNA_REPLICATION related genes expression
+
+```{r}
+dna.rep_col.sig_reads<- dna.rep_col.sig%>%
+                        rownames_to_column(var = "symbol")%>%
+                        left_join(normalized_counts, by="symbol")%>% 
+                        distinct()%>%
+                        dplyr::filter(cluster!=1)
+
+gathered.dna.rep_col.sig_reads<-dna.rep_col.sig_reads%>%
+                               gather(colnames(dna.rep_col.sig_reads)[4:12], key = "sampleName", value = "normalized_counts") %>%
+                               mutate(sampleName=as.factor(sampleName))%>%
+                               left_join(ann.sample_meta, by="sampleName")
+
+
+gathered.dna.rep_col.sig_reads$group<- factor(gathered.dna.rep_col.sig_reads$group, levels=c("WT","KO","RE")) ##change levles for plot
+```
+
+```{r}
+ggboxplot(gathered.dna.rep_col.sig_reads, x = "symbol",
+          y = "normalized_counts",
+          title="DNA Replication Related Genes",
+          color = "group",
+          add = "jitter",
+          # shape="sampleName",
+          # group.by= "cluster",
+          merge = TRUE,
+          ylab = "Normalized Counts",
+          xlab = "",
+          legend= "right",
+          x.text.angle = 45,
+          palette = "aaas")+
+  yscale("log10", .format = FALSE)
+# graph2ppt(file="figures/DNA_Replication.Counts.pptx", width =8,aspectr=sqrt(2),font = "Arial",bg = "transparent",margins =0)
+graph2pdf(file="figures/DNA_Replication.Counts.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+
+```
+
+
+## 2.4 Heatmap of DNA_REPAIR pathway leading genes
+
+```{r}
+plotEnrichment(pathways.GO.BP[["GO_DNA_REPAIR"]],
+               ranks) + labs(title="GO_DNA_REPAIR")
+# graph2ppt(file="figures/DNA_REPAIR.Enrichment.pptx", width =8,aspectr=sqrt(2),bg = "transparent",margins =0)
+graph2pdf(file="figures/DNA_REPAIR.Enrichment.pdf", width=5, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+```{r}
+DNA_REPAIR.Leading<-Go_BP_05 %>% 
+             dplyr::filter(pathway == "GO_DNA_REPAIR")%>%
+             dplyr::select(leadingEdge)%>%
+             unnest()%>% 
+             dplyr::rename(symbol=leadingEdge)%>%
+             inner_join(normalized_counts, by="symbol")%>% 
+             distinct()
+DNA_REPAIR.Leading.all<-DNA_REPAIR.Leading%>%
+                         column_to_rownames(var ="symbol")
+### Filter genes based on padj<0.05
+DNA_REPAIR.Leading.sig <-DNA_REPAIR.Leading %>%
+                          inner_join(WT_KO_res, "symbol"="SYMBOL")%>% 
+                          dplyr::select(-SYMBOL,-gene,-baseMean,-lfcSE)%>%
+                          distinct()%>%
+                          dplyr::filter(padj< 0.05)%>%
+                         column_to_rownames(var ="symbol")
+```
+
+```{r fig.height=10, fig.width=5}
+heat_colors <- brewer.pal(6, "YlOrRd")
+
+dna.repair.out.all<- pheatmap(DNA_REPAIR.Leading.all[2:10], 
+         # color = heat_colors,
+         clustering_method = "ward.D2",
+         cluster_rows = T,
+         cluster_cols = T,
+         show_rownames =T ,
+         annotation = ann.sample, 
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row", 
+         # # kmeans_k = 4,
+         cutree_rows = 3,
+         cutree_cols = 3,
+         fontsize_row = 6, 
+         height = 20)
+
+dna.repair_col.all<- sort(cutree(dna.repair.out.all$tree_row, k=4))%>%
+                 as.factor()%>%
+                 data.frame()%>%
+                 dplyr::rename(cluster=".")
+
+pheatmap(DNA_REPAIR.Leading.all[2:10], 
+         # color = heat_colors,
+         clustering_method = "ward.D2",
+         cluster_rows = T,
+         cluster_cols = T,
+         show_rownames =T ,
+         annotation_col = ann.sample, 
+         annotation_row = dna.repair_col.all,
+         annotation_colors = ann_colors,
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row", 
+         # # kmeans_k = 4,
+         cutree_rows = 4,
+         cutree_cols = 3,
+         fontsize_row = 6, 
+         height = 20)
+
+# graph2ppt(file="figures/DNA_REPAIR.Leading.sig.pptx", width =8,aspectr=0.5,bg = "transparent",margins =0)
+graph2pdf(file="figures/DNA_REPAIR.Leading.sig.pdf", width=5, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+```{r fig.height=8, fig.width=6}
+dna.repair.out.sig<- pheatmap(DNA_REPAIR.Leading.sig[1:9], 
+         # color = heat_colors,
+         clustering_method = "ward.D2",
+         cluster_rows = T,
+         cluster_cols = T,
+         show_rownames =T ,
+         annotation = ann.sample, 
+         annotation_colors = ann_colors,
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row",
+         # # kmeans_k = 4,
+         cutree_rows = 2,
+         cutree_cols = 3,
+         fontsize_row = 10, 
+         height = 20)
+
+dna.repair_col.sig<- sort(cutree(dna.repair.out.sig$tree_row, k=2))%>%
+                 as.factor()%>%
+                 data.frame()%>%
+                 dplyr::rename(cluster=".")
+
+pheatmap(DNA_REPAIR.Leading.sig[1:9], 
+         # color = heat_colors,
+         clustering_method = "ward.D2",
+         cluster_rows = T,
+         cluster_cols = T,
+         show_rownames =T ,
+         annotation_col = ann.sample, 
+         annotation_row = dna.repair_col.sig,
+         annotation_colors = ann_colors,
+         border_color = NA, 
+         fontsize = 10, 
+         scale = "row",
+         # # kmeans_k = 4,
+         cutree_rows = 2,
+         cutree_cols = 3,
+         fontsize_row = 10, 
+         height = 20)
+# graph2ppt(file="figures/DNA_REPAIR.Leading.sig.pptx", width =8,aspectr=0.5,bg = "transparent",margins =0)
+graph2pdf(file="figures/DNA_REPAIR.Leading.sig.pdf", width=5, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+## 2.5 DNA_REPAIR related genes expression
+
+```{r}
+dna.repair_col.sig_reads<- dna.repair_col.sig%>%
+                        rownames_to_column(var = "symbol")%>%
+                        left_join(normalized_counts, by="symbol")%>% 
+                        distinct()%>%
+                        dplyr::filter(cluster!=1)
+
+gathered.dna.repair_col.sig_reads<-dna.repair_col.sig_reads%>%
+                               gather(colnames(dna.rep_col.sig_reads)[4:12], key = "sampleName", value = "normalized_counts") %>%
+                               mutate(sampleName=as.factor(sampleName))%>%
+                               left_join(ann.sample_meta, by="sampleName")
+
+
+gathered.dna.repair_col.sig_reads$group<- factor(gathered.dna.repair_col.sig_reads$group, levels=c("WT","KO","RE")) ##change levles for plot
+```
+
+```{r}
+ggboxplot(gathered.dna.repair_col.sig_reads, x = "symbol",
+          y = "normalized_counts",
+          title="DNA Repair Related Genes",
+          color = "group",
+          add = "jitter",
+          # shape="sampleName",
+          # group.by= "cluster",
+          merge = TRUE,
+          ylab = "Normalized Counts",
+          xlab = "",
+          legend= "right",
+          x.text.angle = 45,
+          palette = "aaas")+
+  yscale("log10", .format = FALSE)
+# graph2ppt(file="figures/DNA_REPAIR.Counts.pptx", width =8,aspectr=sqrt(2),font = "Arial",bg = "transparent",margins =0)
+graph2pdf(file="figures/DNA_REPAIR.Counts.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+## 2.6 Plot qPCR results
+
+```{r}
+FUS.qPCR.all <- read.csv("/Users/weiyanjia/Desktop/RNA_Seq/FUS_qPCR_RNA_SEQ/FUS_Seq_SSIV_All.csv", header = TRUE)
+FUS.qPCR.all.sub <- FUS.qPCR.all %>%
+                    dplyr::select(Target, Sample, Expression,Expression.SD)%>%
+                    dplyr::filter(!is.na(Expression))%>%
+                    dplyr::filter(Target!="WRN",Target!="WNT11",Target!="USP13",Target!="ATF6",Target!="SLC4A10",Target!="POLD4",Target!="SLC26A7",Target!="EPHA6",Target!="SLC6A15")
+FUS.qPCR.all.sub$Sample<- factor(FUS.qPCR.all.sub$Sample, levels=c("GUSU2OS","GUSClone110","FUSClone110")) 
+
+FUS.qPCR.DNA.replication<-FUS.qPCR.all.sub%>%
+                    dplyr::filter(Target=="GINS4" | Target=="RFC4" | Target=="TIMELESS" | Target=="MCM4" | Target=="RFC3")
+
+FUS.qPCR.DNA.repair<-FUS.qPCR.all.sub%>%
+                    dplyr::filter(Target=="53BP1"|Target=="FANCA"|Target=="FANCD2"| Target=="GINS4"|Target=="RFC4")
+            
+```
+
+
+```{r fig.height=5, fig.width=10}
+
+q1<-ggplot(FUS.qPCR.all.sub, aes(Target, Expression)) +
+  geom_errorbar(
+    aes(ymin=Expression-Expression.SD, ymax=Expression+Expression.SD, color = Sample),
+    position = position_dodge(0.8), width = 0.8
+    )+
+  geom_point(aes(color = Sample), position = position_dodge(0.8))
+
+
+q1+labs(title="qPCR Verification OF FUS RNA-Seq", x="", y = "Realtive expression level")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+	theme(plot.title = element_text(hjust = 0.5))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  panel.background = element_blank(),panel.border = element_blank(), axis.line = element_line(colour = "black"))+
+  scale_color_manual(values = c("#3B4992FF","#EE0000FF","#008B45FF"))
+# graph2ppt(file="figures/FUS_qPCR.pptx", width =8,aspectr=sqrt(2),font = "Arial",bg = "transparent",margins =0)
+graph2pdf(file="figures/FUS_qPCR.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+```{r}
+q2<-ggplot(FUS.qPCR.DNA.replication, aes(Target, Expression)) +
+  geom_errorbar(
+    aes(ymin=Expression-Expression.SD, ymax=Expression+Expression.SD, color = Sample),
+    position = position_dodge(0.8), width = 0.8
+    )+
+  geom_point(aes(color = Sample), position = position_dodge(0.8))
+
+q2+labs(title="qPCR OF DNA Replication", x="", y = "Realtive expression level")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+	theme(plot.title = element_text(hjust = 0.5))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  panel.background = element_blank(),panel.border = element_blank(), axis.line = element_line(colour = "black"))+
+  scale_color_manual(values = c("#3B4992FF","#EE0000FF","#008B45FF"))
+
+# graph2ppt(file="figures/FUS_qPCR_DNA_Replication.pptx", width =8,aspectr=sqrt(2),font = "Arial",bg = "transparent",margins =0)
+graph2pdf(file="figures/FUS_qPCR_DNA_Replication.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+
+```{r}
+q3<-ggplot(FUS.qPCR.DNA.repair, aes(Target, Expression)) +
+  geom_errorbar(
+    aes(ymin=Expression-Expression.SD, ymax=Expression+Expression.SD, color = Sample),
+    position = position_dodge(0.8), width = 0.8
+    )+
+  geom_point(aes(color = Sample), position = position_dodge(0.8))
+
+q3+labs(title="qPCR OF DNA Repair", x="", y = "Realtive expression level")+
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+	theme(plot.title = element_text(hjust = 0.5))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  panel.background = element_blank(),panel.border = element_blank(), axis.line = element_line(colour = "black"))+
+  scale_color_manual(values = c("#3B4992FF","#EE0000FF","#008B45FF"))
+
+# graph2ppt(file="figures/FUS_qPCR_DNA_Repair.pptx", width =8,aspectr=sqrt(2),font = "Arial",bg = "transparent",margins =0)
+graph2pdf(file="figures/FUS_qPCR_DNA_Repair.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+```{r}
+sessionInfo()
+```
+

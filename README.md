@@ -1,5 +1,12 @@
 # Fused in sarcoma regulates DNA replication timing and progression
 ## Scripts and resource data for figures:
+* __Fig. 3 and Sup. Fig. 5C to E:__ [GSEA anlysis of FUS RNA-Seq](/Fig_GSEA_FUS.md)
+  * [Rmd file](code/Fig_GSEA_FUS.Rmd).
+  * [MSigDB for biological processing(c5.bp.v6.2.symbols.gmt)](data/).
+  * [raw data of res_WTvsKO_shrunken_tb_entrez.csv](data/res_WTvsKO_shrunken_tb_entrez.csv).
+  * [raw data of normalized_counts.csv](data/normalized_counts.csv).
+  * [raw data of ann.sample.csv](data/ann.sample.csv).
+  * [raw data of FUS_Seq_SSIV_All.csv](data/FUS_Seq_SSIV_All.csv).
 * __Fig. 6A and Sup. Fig. 7:__ [Analysis of FUS MS/MS data](/fig_FUS_MS.md)
   * [Rmd file](code/fig_FUS_MS.Rmd).
   * [MSigDB for biological processing(c5.bp.v6.2.symbols.gmt)](data/).
