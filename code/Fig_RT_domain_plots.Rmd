@@ -1,0 +1,240 @@
+---
+title: "RT_Domain_analysis"
+author: "Weiyan"
+date: "1/8/2019"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Load data and data clean
+
+```{r}
+setwd("/Users/weiyanjia/Desktop/Randal S. Tibbetts/FUS project/Bioinfo_analysis/RT_Domain_identification_analysis/Anotation_results")
+
+library(rtracklayer)
+import ("U2OS_segway.bed", format = "bed")
+U2OS_segway<- read.delim("U2OS_segway.bed", header = FALSE, sep ="\t", stringsAsFactors = FALSE)
+Clone110_segway<- read.delim("Clone110_segway.bed", header = FALSE, sep ="\t", stringsAsFactors = FALSE)
+FUSClone110_segway<- read.delim("FUSClone110_segway.bed", header = FALSE, sep ="\t", stringsAsFactors = FALSE)
+
+FUSClone110_segway_backup <- FUSClone110_segway
+
+head(FUSClone110_segway)
+
+FUSClone110_segway$domain[FUSClone110_segway$V4 == 1 ]<- 0
+FUSClone110_segway$domain[FUSClone110_segway$V4 == 0 ]<- 2
+FUSClone110_segway$domain[FUSClone110_segway$V4 == 2 ]<- 1
+
+FUSClone110_segway$color[FUSClone110_segway$domain == 1 ]<- "217,95,2"
+FUSClone110_segway$color[FUSClone110_segway$domain == 0 ]<- "27,158,119"
+FUSClone110_segway$color[FUSClone110_segway$domain == 2 ]<- "117,112,179"
+
+FUSClone110_segway$V4 <- FUSClone110_segway$domain
+FUSClone110_segway$V9 <- FUSClone110_segway$color
+FUSClone110_segway$domain <- NULL 
+FUSClone110_segway$color <- NULL 
+
+# write.table(FUSClone110_segway,"FUSClone110_segway_x.bed", sep="\t", row.names=FALSE, quote=FALSE, col.names = FALSE)
+
+# _v2 with label
+
+U2OS_segway_v2 <- U2OS_segway
+Clone110_segway_v2 <- Clone110_segway
+FUSClone110_segway_v2 <- FUSClone110_segway
+
+U2OS_segway_v2$domain[U2OS_segway_v2$V4 == 0 ]<- "E"
+U2OS_segway_v2$domain[U2OS_segway_v2$V4 == 1 ]<- "L"
+U2OS_segway_v2$domain[U2OS_segway_v2$V4 == 2 ]<- "M"
+
+Clone110_segway_v2$domain[Clone110_segway_v2$V4 == 0 ]<- "E"
+Clone110_segway_v2$domain[Clone110_segway_v2$V4 == 1 ]<- "L"
+Clone110_segway_v2$domain[Clone110_segway_v2$V4 == 2 ]<- "M"
+
+FUSClone110_segway_v2$domain[FUSClone110_segway_v2$V4 == 0 ]<- "E"
+FUSClone110_segway_v2$domain[FUSClone110_segway_v2$V4 == 1 ]<- "L"
+FUSClone110_segway_v2$domain[FUSClone110_segway_v2$V4 == 2 ]<- "M"
+
+# rename columns
+library(plyr) 
+U2OS_segway_v2 <- rename(U2OS_segway_v2,c('V1'='chr', 'V2'='star','V3'='end'))
+U2OS_segway_v2$domain_size <- U2OS_segway_v2$end -  U2OS_segway_v2$star
+U2OS_segway_v2$sample <- "U2OS"
+
+Clone110_segway_v2 <- rename(Clone110_segway_v2,c('V1'='chr', 'V2'='star','V3'='end'))
+Clone110_segway_v2$domain_size <- Clone110_segway_v2$end -  Clone110_segway_v2$star
+Clone110_segway_v2$sample <- "Clone110"
+
+FUSClone110_segway_v2 <- rename(FUSClone110_segway_v2,c('V1'='chr', 'V2'='star','V3'='end'))
+FUSClone110_segway_v2$domain_size <- FUSClone110_segway_v2$end - FUSClone110_segway_v2$star
+FUSClone110_segway_v2$sample <- "FUSClone110"
+
+sub_U2OS_segway_v2 <- subset(U2OS_segway_v2, select=c("domain", "domain_size","sample"))
+sub_Clone110_segway_v2 <- subset(Clone110_segway_v2, select=c("domain", "domain_size","sample"))
+sub_FUSClone110_segway_v2 <- subset(FUSClone110_segway_v2, select=c("domain", "domain_size","sample"))
+
+all_sample_segway_v2 = rbind(sub_U2OS_segway_v2, sub_Clone110_segway_v2,sub_FUSClone110_segway_v2)
+
+all_sample_segway_v2$domain <- factor(all_sample_segway_v2$domain, levels= c("E","M","L"))
+all_sample_segway_v2$sample <- factor(all_sample_segway_v2$sample, levels= c("U2OS","Clone110","FUSClone110"))
+
+all_sample_segway_v2$domain_size <- sapply(all_sample_segway_v2$domain_size, as.numeric)
+U2OS_segway_v2$domain_size <- sapply(U2OS_segway_v2$domain_size, as.numeric)
+Clone110_segway_v2$domain_size <- sapply(Clone110_segway_v2$domain_size, as.numeric)
+FUSClone110_segway_v2$domain_size <- sapply(FUSClone110_segway_v2$domain_size, as.numeric)
+
+# write.table(U2OS_segway_v2,"U2OS_segway_v2.txt", sep="\t", row.names=FALSE, quote=FALSE, col.names = TRUE)
+# write.table(Clone110_segway_v2,"Clone110_segway_v2.txt", sep="\t", row.names=FALSE, quote=FALSE, col.names = TRUE)
+# write.table(FUSClone110_segway_v2,"FUSClone110_segway_v2.txt", sep="\t", row.names=FALSE, quote=FALSE, col.names = TRUE)
+# write.table(all_sample_segway_v2,"all_sample_segway_v2.txt", sep="\t", row.names=FALSE, quote=FALSE, col.names = TRUE)
+# U2OS_segway_v2
+# Clone110_segway_v2
+# FUSClone110_segway_v2
+# all_sample_segway_v2
+
+```
+
+# 2. Domain size distribution
+
+## 2.1 boxplot of domain size
+
+```{r fig.height=6, fig.width=8}
+library(ggpubr)
+
+all_sample_segway_v2 <- all_sample_segway_v2%>%
+                        tidyr::drop_na()
+  
+  
+my_comparisons <- list(c("U2OS", "Clone110"), c("U2OS", "FUSClone110"))
+
+ggboxplot(all_sample_segway_v2, x = "sample",
+          y = "domain_size",
+          facet.by = "domain",
+          short.panel.labs = TRUE,
+          legend.title ="",
+          x.text.angle = 45,
+          #repel = TRUE,
+          #combine = TRUE,
+          #merge = TRUE,
+          xlab ="Replication Domain",
+          ylab = "Domain Size (bp)", 
+          color = "sample",
+          palette = "aaas"
+         )+
+  yscale("log10", .format = TRUE)+
+  
+stat_compare_means(comparisons = my_comparisons, aes(label = paste0("p = ", ..p.format..)),
+                  method = "t.test")
+```
+
+## 2.2 violinplot of domain size(with boxplot)
+
+```{r fig.height=6, fig.width=8}
+library(ggpubr)
+
+my_comparisons <- list(c("U2OS", "Clone110"), c("U2OS", "FUSClone110"))
+p<- ggviolin(all_sample_segway_v2, x = "sample",
+          y = "domain_size",
+          facet.by = "domain",
+          short.panel.labs = TRUE,
+          legend.title ="",
+          x.text.angle = 45,
+          xlab ="Replication Domain",
+          ylab = "Domain Size (bp)", 
+          color = "sample",
+          palette = "aaas",
+          add = "boxplot"
+         # add = "median_iqr"
+         )+
+  yscale("log10", .format = TRUE)+
+stat_compare_means(comparisons = my_comparisons, aes(label = paste0("p = ", ..p.format..)),
+                  method = "t.test", label.y = c(7.7, 8))
+p
+
+```
+
+
+# 3.Summary of Replication timing domain
+## 3.1 table of RT domain count
+```{r}
+
+RT_sum <- count(all_sample_segway_v2, vars = c("sample","domain"))
+RT_sum
+
+# get median value of each domain in each sample
+
+U2OS_E <- subset(U2OS_segway_v2, grepl('E', domain))
+Clone110_E <- subset(Clone110_segway_v2, grepl('E', domain))
+FUSClone110_E <- subset(FUSClone110_segway_v2, grepl('E', domain))
+
+summary(U2OS_E$domain_size)
+summary(Clone110_E$domain_size)
+summary(FUSClone110_E$domain_size)
+
+sum(U2OS_E$domain_size)
+
+# cat(paste("Median:", median(FUSClone110_E$domain_size)))
+```
+
+## 3.2 barplot of RT domain count
+
+```{r fig.height=5, fig.width=4}
+ggbarplot(RT_sum, x="sample", 
+          y= "freq",
+          ylab = "Domain Count",
+          xlab = "",
+          legend.title ="Domain",
+          color = "domain",
+          fill = "domain",
+          palette = "aaas",
+          label = TRUE,
+          lab.pos = "in",
+          width = 0.6,
+          #add = "median",
+          lab.col = "white"
+          #position = position_dodge(0.9)
+          #order = c()
+          #orientation = "horiz"
+          )+   
+  scale_y_continuous(expand = c(0, 0))
+
+```
+
+
+## 3.3 barplot of RT domain coverage
+
+```{r fig.height=5, fig.width=4}
+library(dplyr)
+Domain_sum <- all_sample_segway_v2 %>%
+              tidyr::drop_na()%>%
+              dplyr::group_by(sample, domain)%>%
+              dplyr::summarise(domain_size_sum= sum(domain_size))
+
+Domain_sum<- Domain_sum%>%
+       dplyr::mutate(Percentage=round(100*domain_size_sum/sum(domain_size_sum), 2))
+Domain_sum
+ggbarplot(Domain_sum, x="sample", 
+          y= "Percentage",
+          ylab = "Genome Coverage (%)",
+          xlab = "",
+          legend.title ="Domain",
+          color = "domain",
+          fill = "domain",
+          palette = "aaas",
+          label = TRUE,
+          lab.pos = "in",
+          width = 0.6,
+          lab.col = "white"
+          )+   
+  scale_y_continuous(expand = c(0, 0))
+
+```
+
+
+```{r}
+sessionInfo()
+```
+
+
