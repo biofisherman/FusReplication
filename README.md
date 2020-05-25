@@ -43,7 +43,7 @@
   * [DEG list of WT and RE cells](data/sigWTvsRE_DESeq2.csv).
   * [DEG list of RE and KO cells](data/sigREvsKO_DESeq2.csv).
 
-* __Fig. 8, 9 and Sup. Fig. 8:__ [Analysis of FUS replication timing](/fig_FUS_MS.md)
+* __Fig. 8, 9 and Sup. Fig. 8:__ Analysis of FUS replication timing
     * [code for QC, mapping and log2(S/G1)](code/RT_FUS.sh).
     * [RT signal Normalization and smoothing](code/normalization_smoothing.R).
     * [RT plot of Fig. 8 and Sup. Fig. 8A to D](/Fig_RT_Plots20190102.md).
