@@ -44,13 +44,13 @@
   * [DEG list of RE and KO cells](data/sigREvsKO_DESeq2.csv).
 
 * __Fig. 8, 9 and Sup. Fig. 8:__ Analysis of FUS replication timing
-    * [Code for QC, mapping and log2(S/G1), RT_FUS.sh](code/RT_FUS.sh).
-    * [RT signal Normalization and smoothing, normalization_smoothing.R](code/normalization_smoothing.R).
+    * Code for QC, mapping and log2(S/G1): [RT_FUS.sh](code/RT_FUS.sh).
+    * RT signal Normalization and smoothing: [normalization_smoothing.R](code/normalization_smoothing.R).
     * [RT plot of Fig. 8 and Sup. Fig. 8A to D](/Fig_RT_Plots20190102.md).
-      * [Rmd file of RT plot of Fig. 8 and Sup. Fig. 8A to D](code/Fig_RT_Plots20190102.Rmd).
-      * [Raw data of smoothing data](data/all_sample_r1_r2_smooth.txt).
+      * Rmd file [Fig_RT_Plots20190102.Rmd](code/Fig_RT_Plots20190102.Rmd).
+      * Raw data of smoothing data[all_sample_r1_r2_smooth.txt](data/all_sample_r1_r2_smooth.txt).
     * [RT domain plots for Fig. 9A to C](/Fig_RT_domain_plots.md).
-      * [Rmd file of RT domain plots for Fig. 9A to C](code/Fig_RT_domain_plots.Rmd).
+      * Rmd file [Fig_RT_domain_plots.Rmd](code/Fig_RT_domain_plots.Rmd).
       * Raw data of segway results
         * [U2OS, FUS<sup>+/+</sup>](data/U2OS_segway.bed)
         * [Clone110, FUS<sup>-/-</sup>](data/Clone110_segway.bed)
