@@ -44,8 +44,8 @@
   * [DEG list of RE and KO cells](data/sigREvsKO_DESeq2.csv).
 
 * __Fig. 8, 9 and Sup. Fig. 8:__ Analysis of FUS replication timing
-    * [Code for QC, mapping and log2(S/G1)](code/RT_FUS.sh).
-    * [RT signal Normalization and smoothing](code/normalization_smoothing.R).
+    * [Code for QC, mapping and log2(S/G1), RT_FUS.sh](code/RT_FUS.sh).
+    * [RT signal Normalization and smoothing, normalization_smoothing.R](code/normalization_smoothing.R).
     * [RT plot of Fig. 8 and Sup. Fig. 8A to D](/Fig_RT_Plots20190102.md).
     * [Rmd file of RT plot of Fig. 8 and Sup. Fig. 8A to D](code/Fig_RT_Plots20190102.Rmd).
     * [raw data of smoothing data](data/all_sample_r1_r2_smooth.txt).
