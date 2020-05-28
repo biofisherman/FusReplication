@@ -1,0 +1,343 @@
+---
+title: "RT Signal Enrichment"
+author: "Weiyan"
+date: "5/27/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(EnrichedHeatmap) # for making heatmap
+library(rtracklayer)  # for reading bigwig and bed files
+library(GenomicRanges)
+library(circlize)
+library(png)
+library(dplyr)
+library(Hmisc)
+library(tidyverse)
+```
+
+# Read in bigwig files to GRanges object
+```{r}
+# read in bigwig files to GRanges object, it can be slow. bigwig is several hundred MB
+# you can use which argument to restrict the data in certain regions.
+U2OS.bg<- import("data/U2OS_RT_R1-X_Loess_smoothing.bedGraph", format = "BedGraph")
+Clone110.bg<- import("data/Clone110_RT_R1-X_Loess_smoothing.bedGraph", format = "BedGraph")
+FUSClone110.bg<- import("data/FUSClone110_RT_R1-X_Loess_smoothing.bedGraph", format = "BedGraph")
+```
+
+# 1. ERD
+## 1.1 load data
+```{r}
+# read in the bed peak files to GRanges object
+ERD.bed<- import("data/ERD_lost.bed", format = "BED")
+```
+
+## 1.2 take only the center of the peaks
+
+```{r}
+ERD.1MB<- resize(ERD.bed, width = 1000000, fix = "center")
+ERD.1MB.center<- resize(ERD.1MB, width =1, fix = "center")
+```
+
+## 1.3 prepare matrix
+```{r}
+U2OS.mat<- normalizeToMatrix(U2OS.bg, ERD.1MB.center, value_column = "score",
+                             mean_mode="w0", w=1000, extend = 500000)
+
+Clone110.mat<- normalizeToMatrix(Clone110.bg, ERD.1MB.center, value_column = "score",
+                                 mean_mode="w0", w=1000, extend = 500000)
+
+FUSClone110.mat<- normalizeToMatrix(FUSClone110.bg, ERD.1MB.center, value_column = "score",
+                                    mean_mode="w0", w=1000, extend = 500000)
+
+```
+
+### 1.3.1 check data range for "keep" argument in normalizeToMatrix
+```{r}
+quantile(U2OS.mat, probs = c(0, 0.25, 0.5, 0.75, 0.99, 1))
+quantile(Clone110.mat, probs = c(0, 0.25, 0.5, 0.75, 0.99, 1))
+quantile(FUSClone110.mat, probs = c(0, 0.25, 0.5, 0.75, 0.99, 1))
+```
+
+## 1.4 mapping colors and enrich plot
+**from the quantile, I choose the color mapping range**
+```{r fig.height=8, fig.width=6}
+col_fun_U2OS<- circlize::colorRamp2(c(0, 1), c("white", "red"))
+col_fun_Clone110<- circlize::colorRamp2(c(0, 1), c("white", "red"))
+col_fun_FUSClone110<- circlize::colorRamp2(c(0, 1), c("white", "red"))
+
+ EnrichedHeatmap(U2OS.mat, axis_name_rot = 0, name = "U2OS",
+                column_title = "U2OS", use_raster = TRUE, col = col_fun_U2OS,
+                top_annotation = HeatmapAnnotation(lines = anno_enriched(axis_param = list(facing ="inside",
+     side ="left"                                                                                       ))))+
+  
+  EnrichedHeatmap(Clone110.mat, axis_name_rot = 0, name = "Clone110", 
+                  column_title = "Clone110", use_raster = TRUE, col = col_fun_Clone110,
+                  top_annotation = HeatmapAnnotation(lines = anno_enriched(axis_param = list(facing ="inside",
+       side ="left"                                                                                       ))))+
+  
+  EnrichedHeatmap(FUSClone110.mat, axis_name_rot = 0, name = "FUSClone110", 
+                  column_title = "FUSClone110", use_raster = TRUE, col = col_fun_FUSClone110,
+                  top_annotation = HeatmapAnnotation(lines = anno_enriched(axis_param = list(facing ="inside",
+       side ="left"                                                                                       ))))
+```
+
+## 1.5 meta profile plot
+```{r}
+U2OS_mean<- data.frame(avg = colMeans(U2OS.mat), 
+                       CI_lower = apply(U2OS.mat, 2, Hmisc::smean.cl.normal)[2,],
+                       CI_upper = apply(U2OS.mat, 2, Hmisc::smean.cl.normal)[3,]) %>% 
+  mutate(factor = "U2OS", pos = colnames(U2OS.mat)) 
+
+Clone110_mean<- data.frame(avg = colMeans(Clone110.mat), 
+                           CI_lower = apply(Clone110.mat, 2, Hmisc::smean.cl.normal)[2,],
+                           CI_upper = apply(Clone110.mat, 2, Hmisc::smean.cl.normal)[3,]) %>%
+  mutate(factor = "Clone110", pos = colnames(Clone110.mat))
+
+FUSClone110_mean<- data.frame(avg = colMeans(FUSClone110.mat), 
+                              CI_lower = apply(FUSClone110.mat, 2, Hmisc::smean.cl.normal)[2,],
+                              CI_upper = apply(FUSClone110.mat, 2, Hmisc::smean.cl.normal)[3,]) %>%
+  mutate(factor = "FUSClone110", pos = colnames(FUSClone110.mat))
+
+combine_all<- bind_rows(U2OS_mean, Clone110_mean, FUSClone110_mean)
+
+## change position to factor and order it 
+combine_all$pos<- factor(combine_all$pos, levels= U2OS_mean$pos)
+```
+
+### 1.5.1 plot meta profile (without confidence interval)
+```{r}
+ggplot(combine_all, aes(x = pos,y = avg, group = factor)) + geom_line(aes(color = factor)) + 
+  theme_bw(base_size = 14) +
+  theme(axis.ticks.x = element_blank()) +
+  scale_x_discrete(breaks = c("u1", "d10", "d500"), labels =c ("-500kb", "center", "500kb")) +
+  xlab("ERD") + 
+  ylab("RT")+
+  ggtitle("RT signal in ERD")
+```
+
+### 1.5.2 plot meta profile (with confidence interval)
+```{r}
+ggplot(combine_all, aes(x = pos,y = avg, group = factor)) + geom_line(aes(color = factor)) + 
+  geom_ribbon(aes(ymin= CI_lower, ymax=CI_upper), alpha=0.2, col = "#8B7E66") +
+  theme_bw(base_size = 14) +
+  theme(axis.ticks.x = element_blank()) +
+  scale_x_discrete(breaks = c("u1", "d10", "d500"), labels =c ("-500kb", "center", "500kb")) +
+  xlab("ERD") + 
+  ylab("RT")+
+  ggtitle("RT signal in ERD")
+```
+
+# 2. MRD
+## 2.1 load data
+```{r}
+# read in the bed peak files to GRanges object
+MRD.bed<- import("data/MRD_lost.bed", format = "BED")
+```
+
+## 2.2 take only the center of the peaks
+
+```{r}
+MRD.1MB<- resize(MRD.bed, width = 1000000, fix = "center")
+MRD.1MB.center<- resize(MRD.1MB, width =1, fix = "center")
+```
+
+## 2.3 prepare matrix
+```{r}
+U2OS.mat<- normalizeToMatrix(U2OS.bg, MRD.1MB.center, value_column = "score",
+                             mean_mode="w0", w=1000, extend = 500000)
+
+Clone110.mat<- normalizeToMatrix(Clone110.bg, MRD.1MB.center, value_column = "score",
+                                 mean_mode="w0", w=1000, extend = 500000)
+
+FUSClone110.mat<- normalizeToMatrix(FUSClone110.bg, MRD.1MB.center, value_column = "score",
+                                    mean_mode="w0", w=1000, extend = 500000)
+
+```
+
+### 2.3.1 check data range for "keep" argument in normalizeToMatrix
+```{r}
+quantile(U2OS.mat, probs = c(0, 0.25, 0.5, 0.75, 0.99, 1))
+quantile(Clone110.mat, probs = c(0, 0.25, 0.5, 0.75, 0.99, 1))
+quantile(FUSClone110.mat, probs = c(0, 0.25, 0.5, 0.75, 0.99, 1))
+```
+
+## 2.4 mapping colors and enrich plot
+**from the quantile, I choose the color mapping range**
+```{r fig.height=8, fig.width=6}
+col_fun_U2OS<- circlize::colorRamp2(c(-0.4, 0.4), c("white", "red"))
+col_fun_Clone110<- circlize::colorRamp2(c(-0.4, 0.4), c("white", "red"))
+col_fun_FUSClone110<- circlize::colorRamp2(c(-0.4, 0.4), c("white", "red"))
+
+ EnrichedHeatmap(U2OS.mat, axis_name_rot = 0, name = "U2OS",
+                column_title = "U2OS", use_raster = TRUE, col = col_fun_U2OS,
+                top_annotation = HeatmapAnnotation(lines = anno_enriched(axis_param = list(facing ="inside",
+     side ="left"                                                                                       ))))+
+  
+  EnrichedHeatmap(Clone110.mat, axis_name_rot = 0, name = "Clone110", 
+                  column_title = "Clone110", use_raster = TRUE, col = col_fun_Clone110,
+                  top_annotation = HeatmapAnnotation(lines = anno_enriched(axis_param = list(facing ="inside",
+       side ="left"                                                                                       ))))+
+  
+  EnrichedHeatmap(FUSClone110.mat, axis_name_rot = 0, name = "FUSClone110", 
+                  column_title = "FUSClone110", use_raster = TRUE, col = col_fun_FUSClone110,
+                  top_annotation = HeatmapAnnotation(lines = anno_enriched(axis_param = list(facing ="inside",
+       side ="left"                                                                                       ))))
+```
+
+## 2.5 meta profile plot
+```{r}
+U2OS_mean<- data.frame(avg = colMeans(U2OS.mat), 
+                       CI_lower = apply(U2OS.mat, 2, Hmisc::smean.cl.normal)[2,],
+                       CI_upper = apply(U2OS.mat, 2, Hmisc::smean.cl.normal)[3,]) %>% 
+  mutate(factor = "U2OS", pos = colnames(U2OS.mat)) 
+
+Clone110_mean<- data.frame(avg = colMeans(Clone110.mat), 
+                           CI_lower = apply(Clone110.mat, 2, Hmisc::smean.cl.normal)[2,],
+                           CI_upper = apply(Clone110.mat, 2, Hmisc::smean.cl.normal)[3,]) %>%
+  mutate(factor = "Clone110", pos = colnames(Clone110.mat))
+
+FUSClone110_mean<- data.frame(avg = colMeans(FUSClone110.mat), 
+                              CI_lower = apply(FUSClone110.mat, 2, Hmisc::smean.cl.normal)[2,],
+                              CI_upper = apply(FUSClone110.mat, 2, Hmisc::smean.cl.normal)[3,]) %>%
+  mutate(factor = "FUSClone110", pos = colnames(FUSClone110.mat))
+
+combine_all<- bind_rows(U2OS_mean, Clone110_mean, FUSClone110_mean)
+
+## change position to factor and order it 
+combine_all$pos<- factor(combine_all$pos, levels= U2OS_mean$pos)
+```
+
+### 2.5.1 plot meta profile (without confidence interval)
+```{r}
+ggplot(combine_all, aes(x = pos,y = avg, group = factor)) + geom_line(aes(color = factor)) + 
+  theme_bw(base_size = 14) +
+  theme(axis.ticks.x = element_blank()) +
+  scale_x_discrete(breaks = c("u1", "d10", "d500"), labels =c ("-500kb", "center", "500kb")) +
+  xlab("MRD") + 
+  ylab("RT")+
+  ggtitle("RT signal in MRD")
+```
+
+### 2.5.2 plot meta profile (with confidence interval)
+```{r}
+ggplot(combine_all, aes(x = pos,y = avg, group = factor)) + geom_line(aes(color = factor)) + 
+  geom_ribbon(aes(ymin= CI_lower, ymax=CI_upper), alpha=0.2, col = "#8B7E66") +
+  theme_bw(base_size = 14) +
+  theme(axis.ticks.x = element_blank()) +
+  scale_x_discrete(breaks = c("u1", "d10", "d500"), labels =c ("-500kb", "center", "500kb")) +
+  xlab("MRD") + 
+  ylab("RT")+
+  ggtitle("RT signal in MRD")
+```
+# 3. LRD
+## 3.1 load data
+```{r}
+# read in the bed peak files to GRanges object
+LRD.bed<- import("data/LRD_lost.bed", format = "BED")
+```
+
+## 3.2 take only the center of the peaks
+
+```{r}
+LRD.1MB<- resize(LRD.bed, width = 1000000, fix = "center")
+LRD.1MB.center<- resize(LRD.1MB, width =1, fix = "center")
+```
+
+## 3.3 prepare matrix
+```{r}
+U2OS.mat<- normalizeToMatrix(U2OS.bg, LRD.1MB.center, value_column = "score",
+                             mean_mode="w0", w=1000, extend = 500000)
+
+Clone110.mat<- normalizeToMatrix(Clone110.bg, LRD.1MB.center, value_column = "score",
+                                 mean_mode="w0", w=1000, extend = 500000)
+
+FUSClone110.mat<- normalizeToMatrix(FUSClone110.bg, LRD.1MB.center, value_column = "score",
+                                    mean_mode="w0", w=1000, extend = 500000)
+
+```
+
+### 3.3.1 check data range for "keep" argument in normalizeToMatrix
+```{r}
+quantile(U2OS.mat, probs = c(0, 0.25, 0.5, 0.75, 0.99, 1))
+quantile(Clone110.mat, probs = c(0, 0.25, 0.5, 0.75, 0.99, 1))
+quantile(FUSClone110.mat, probs = c(0, 0.25, 0.5, 0.75, 0.99, 1))
+```
+
+## 3.4 mapping colors and enrich plot
+**from the quantile, I choose the color mapping range**
+```{r fig.height=8, fig.width=6}
+col_fun_U2OS<- circlize::colorRamp2(c(-1, 0), c("white", "red"))
+col_fun_Clone110<- circlize::colorRamp2(c(-1, 0), c("white", "red"))
+col_fun_FUSClone110<- circlize::colorRamp2(c(-1, 0), c("white", "red"))
+
+ EnrichedHeatmap(U2OS.mat, axis_name_rot = 0, name = "U2OS",
+                column_title = "U2OS", use_raster = TRUE, col = col_fun_U2OS,
+                top_annotation = HeatmapAnnotation(lines = anno_enriched(axis_param = list(facing ="inside",
+     side ="left"                                                                                       ))))+
+  
+  EnrichedHeatmap(Clone110.mat, axis_name_rot = 0, name = "Clone110", 
+                  column_title = "Clone110", use_raster = TRUE, col = col_fun_Clone110,
+                  top_annotation = HeatmapAnnotation(lines = anno_enriched(axis_param = list(facing ="inside",
+       side ="left"                                                                                       ))))+
+  
+  EnrichedHeatmap(FUSClone110.mat, axis_name_rot = 0, name = "FUSClone110", 
+                  column_title = "FUSClone110", use_raster = TRUE, col = col_fun_FUSClone110,
+                  top_annotation = HeatmapAnnotation(lines = anno_enriched(axis_param = list(facing ="inside",
+       side ="left"                                                                                       ))))
+```
+
+## 3.5 meta profile plot
+```{r}
+U2OS_mean<- data.frame(avg = colMeans(U2OS.mat), 
+                       CI_lower = apply(U2OS.mat, 2, Hmisc::smean.cl.normal)[2,],
+                       CI_upper = apply(U2OS.mat, 2, Hmisc::smean.cl.normal)[3,]) %>% 
+  mutate(factor = "U2OS", pos = colnames(U2OS.mat)) 
+
+Clone110_mean<- data.frame(avg = colMeans(Clone110.mat), 
+                           CI_lower = apply(Clone110.mat, 2, Hmisc::smean.cl.normal)[2,],
+                           CI_upper = apply(Clone110.mat, 2, Hmisc::smean.cl.normal)[3,]) %>%
+  mutate(factor = "Clone110", pos = colnames(Clone110.mat))
+
+FUSClone110_mean<- data.frame(avg = colMeans(FUSClone110.mat), 
+                              CI_lower = apply(FUSClone110.mat, 2, Hmisc::smean.cl.normal)[2,],
+                              CI_upper = apply(FUSClone110.mat, 2, Hmisc::smean.cl.normal)[3,]) %>%
+  mutate(factor = "FUSClone110", pos = colnames(FUSClone110.mat))
+
+combine_all<- bind_rows(U2OS_mean, Clone110_mean, FUSClone110_mean)
+
+## change position to factor and order it 
+combine_all$pos<- factor(combine_all$pos, levels= U2OS_mean$pos)
+```
+
+### 3.5.1 plot meta profile (without confidence interval)
+```{r}
+ggplot(combine_all, aes(x = pos,y = avg, group = factor)) + geom_line(aes(color = factor)) + 
+  theme_bw(base_size = 14) +
+  theme(axis.ticks.x = element_blank()) +
+  scale_x_discrete(breaks = c("u1", "d10", "d500"), labels =c ("-500kb", "center", "500kb")) +
+  xlab("LRD") + 
+  ylab("RT")+
+  ggtitle("RT signal in LRD")
+```
+
+### 3.5.2 plot meta profile (without confidence interval)
+```{r}
+ggplot(combine_all, aes(x = pos,y = avg, group = factor)) + geom_line(aes(color = factor)) + 
+  geom_ribbon(aes(ymin= CI_lower, ymax=CI_upper), alpha=0.2, col = "#8B7E66") +
+  theme_bw(base_size = 14) +
+  theme(axis.ticks.x = element_blank()) +
+  scale_x_discrete(breaks = c("u1", "d10", "d500"), labels =c ("-500kb", "center", "500kb")) +
+  xlab("LRD") + 
+  ylab("RT")+
+  ggtitle("RT signal in LRD")
+```
+
+```{r}
+sessionInfo()
+```
+

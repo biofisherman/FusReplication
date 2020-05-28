@@ -55,3 +55,17 @@
         * [U2OS, FUS<sup>+/+</sup>](data/U2OS_segway.bed)
         * [Clone110, FUS<sup>-/-</sup>](data/Clone110_segway.bed)
         * [FUS/Clonee110, FUS<sup>-/-</sup>:FUS](data/FUSClone110_segway.bed)
+    * [RT enrich plots for Fig. 9E and Sup. Fig. 8E to G](/FigRtEnrichment.md).
+        * Rmd file: [Fig_RT_domain_plots.Rmd](code/FigRtEnrichment.Rmd).
+        * [RT enrich plots of R1](/FigRtEnrichmentR1.md)
+          * Rmd file: [Fig_RT_domain_plotsR1.Rmd](code/FigRtEnrichmentR1.Rmd).
+        * Raw data FADs and RT signal files:
+          * [FAD-E](data/ERD_lost.bed)
+          * [FAD-M](data/MRD_lost.bed)
+          * [FAD-L](data/LRD_lost.bed)
+          * [U2OS-R1, FUS<sup>+/+</sup>](data/U2OS_RT_R1-X_Loess_smoothing.bedGraph)
+          * [Clone110-R1, FUS<sup>-/-</sup>](data/Clone110_RT_R1-X_Loess_smoothing.bedGraph)
+          * [FUS/Clonee110-R1, FUS<sup>-/-</sup>:FUS](data/FUSClone110_RT_R1-X_Loess_smoothing.bedGraph)
+          * [U2OS-R2, FUS<sup>+/+</sup>](data/U2OS_RT_R2-X_Loess_smoothing.bedGraph)
+          * [Clone110-R2, FUS<sup>-/-</sup>](data/Clone110_RT_R2-X_Loess_smoothing.bedGraph)
+          * [FUS/Clonee110-R2, FUS<sup>-/-</sup>:FUS](data/FUSClone110_RT_R2-X_Loess_smoothing.bedGraph)
