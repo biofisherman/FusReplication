@@ -54,7 +54,7 @@
         * [U2OS, FUS<sup>+/+</sup>](data/U2OS_segway.bed)
         * [Clone110, FUS<sup>-/-</sup>](data/Clone110_segway.bed)
         * [FUS/Clonee110, FUS<sup>-/-</sup>:FUS](data/FUSClone110_segway.bed)
-    * [RT enrich plots for Fig. 9E and Sup. Fig. 8E to G](/FigRtEnrichment.md).
+    * [RT enrich plots for Fig. 9E and Sup. Fig. 8E to G(R2)](/FigRtEnrichment.md).
         * Rmd file: [Fig_RT_domain_plots.Rmd](code/FigRtEnrichment.Rmd).
         * [RT enrich plots of R1](/FigRtEnrichmentR1.md)
           * Rmd file: [Fig_RT_domain_plotsR1.Rmd](code/FigRtEnrichmentR1.Rmd).
