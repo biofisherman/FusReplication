@@ -42,7 +42,6 @@
   * [DEG list of WT and KO cells](data/sigWTvsKO_DESeq2.csv).
   * [DEG list of WT and RE cells](data/sigWTvsRE_DESeq2.csv).
   * [DEG list of RE and KO cells](data/sigREvsKO_DESeq2.csv).
-
 * __Fig. 8, 9 and Sup. Fig. 8:__ Analysis of FUS replication timing
     * Code for QC, mapping and log2(S/G1): [RT_FUS.sh](code/RT_FUS.sh).
     * RT signal Normalization and smoothing: [normalization_smoothing.R](code/normalization_smoothing.R).
@@ -60,12 +59,12 @@
         * [RT enrich plots of R1](/FigRtEnrichmentR1.md)
           * Rmd file: [Fig_RT_domain_plotsR1.Rmd](code/FigRtEnrichmentR1.Rmd).
         * Raw data FADs and RT signal files:
-          * [FAD-E](data/ERD_lost.bed)
-          * [FAD-M](data/MRD_lost.bed)
-          * [FAD-L](data/LRD_lost.bed)
-          * [U2OS-R1, FUS<sup>+/+</sup>](data/U2OS_RT_R1-X_Loess_smoothing.bedGraph)
-          * [Clone110-R1, FUS<sup>-/-</sup>](data/Clone110_RT_R1-X_Loess_smoothing.bedGraph)
-          * [FUS/Clonee110-R1, FUS<sup>-/-</sup>:FUS](data/FUSClone110_RT_R1-X_Loess_smoothing.bedGraph)
-          * [U2OS-R2, FUS<sup>+/+</sup>](data/U2OS_RT_R2-X_Loess_smoothing.bedGraph)
-          * [Clone110-R2, FUS<sup>-/-</sup>](data/Clone110_RT_R2-X_Loess_smoothing.bedGraph)
-          * [FUS/Clonee110-R2, FUS<sup>-/-</sup>:FUS](data/FUSClone110_RT_R2-X_Loess_smoothing.bedGraph)
+          * [FAD-E.bed](data/ERD_lost.bed)
+          * [FAD-M.bed](data/MRD_lost.bed)
+          * [FAD-L.bed](data/LRD_lost.bed)
+          * [U2OS-RT-R1.bedGraph, FUS<sup>+/+</sup>](data/U2OS_RT_R1-X_Loess_smoothing.bedGraph)
+          * [Clone110-RT-R1.bedGraph, FUS<sup>-/-</sup>](data/Clone110_RT_R1-X_Loess_smoothing.bedGraph)
+          * [FUS/Clonee110-RT-R1.bedGraph, FUS<sup>-/-</sup>:FUS](data/FUSClone110_RT_R1-X_Loess_smoothing.bedGraph)
+          * [U2OS-RT-R2.bedGraph, FUS<sup>+/+</sup>](data/U2OS_RT_R2-X_Loess_smoothing.bedGraph)
+          * [Clone110-RT-R2.bedGraph, FUS<sup>-/-</sup>](data/Clone110_RT_R2-X_Loess_smoothing.bedGraph)
+          * [FUS/Clonee110-RT-R2.bedGraph, FUS<sup>-/-</sup>:FUS](data/FUSClone110_RT_R2-X_Loess_smoothing.bedGraph)
