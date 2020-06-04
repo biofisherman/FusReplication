@@ -68,3 +68,27 @@
           * [U2OS-RT-R2.bedGraph, FUS<sup>+/+</sup>](data/U2OS_RT_R2-X_Loess_smoothing.bedGraph)
           * [Clone110-RT-R2.bedGraph, FUS<sup>-/-</sup>](data/Clone110_RT_R2-X_Loess_smoothing.bedGraph)
           * [FUS/Clonee110-RT-R2.bedGraph, FUS<sup>-/-</sup>:FUS](data/FUSClone110_RT_R2-X_Loess_smoothing.bedGraph)
+    * RT domain identification:
+       * code file: [RDsIdentifybySegway.sh](code/RDsIdentifybySegway.sh).
+       * hg38.chrom.sizes.txt: [hg38.chrom.sizes.txt](data/hg38.chrom.sizes.txt).
+       * RT signal files used are same as **Raw data FADs and RT signal files**.
+    * Code for FAD GO enrichment analysis in Fig 9H and I:
+       * code file: [FUS_RT_groupcompare_GOEnrich.R](code/FUS_RT_groupcompare_GOEnrich.R).
+       * input file: [ERD_MRD_LRD_ENTREID.txt](data/ERD_MRD_LRD_ENTREID.txt).
+    * RT signal enrichment in gene regions in Fig. 9F and G, and Sup. Fig. 8H to J:
+       * code file for FUS regulated gene bed file: [FUS_gene_bed.sh](code/FUS_gene_bed.sh).
+       * code file for RT enrichment analysis: [RT_Signal_EnrichPlots.sh](code/RT_Signal_EnrichPlots.sh).
+       * code file for Transcription enrichment analysis: [Transcription_Signal_EnrichPlots.sh](code/Transcription_Signal_EnrichPlots.sh).
+       * RT signal files used are same as **"Raw data FADs and RT signal files"**.
+       * RT bed files:
+         * FADs: refer to **"Raw data FADs and RT signal files"**
+         * RDs:
+           * [U2OS_ERD.bed](data/U2OS_ERD.bed)
+           * [U2OS_MRD.bed](data/U2OS_MRD.bed)
+           * [U2OS_LRD.bed](data/U2OS_LRD.bed)
+           * [Clone110_ERD.bed](data/Clone110_ERD.bed)
+           * [Clone110_MRD.bed](data/Clone110_MRD.bed)
+           * [Clone110_LRD.bed](data/Clone110_LRD.bed)
+           * [FUSClone110_ERD.bed](data/FUSClone110_ERD.bed)
+           * [FUSClone110_MRD.bed](data/FUSClone110_MRD.bed)
+           * [FUSClone110_LRD.bed](data/FUSClone110_LRD.bed)
