@@ -10,7 +10,7 @@ Weiyan
 > 1.  Samples: U2OS,Clone46 and Clone110;
 > 2.  2Gy IR;
 > 3.  Antibodies: BRCA1(m,), CyclinA;
-> 4.  IRIF foci was quantified by CellProfiler;
+> 4.  IRIF foci were counted manually;
 > 5.  Image collected on 12222015
 
 # Packages
@@ -51,7 +51,7 @@ graph2pdf(file="plots/IRIF_BRCA1/IRIF_BRCA1_CyclinA_all.pdf", width=6, aspectr=s
 ```
 ``` r
 
-p<-ggboxplot(IRIF_BRCA1_CyclinA_sum, 
+p<-ggboxplot(IRIF_BRCA1_CyclinA_sum,
           x="sample",
           y="percentage",
           # merge = TRUE,
@@ -78,4 +78,3 @@ graph2pdf(file="plots/IRIF_BRCA1/IRIF_BRCA1_CyclinA_test.pdf", width=8, aspectr=
 ```
 
     ## Exported graph as plots/IRIF_BRCA1/IRIF_BRCA1_CyclinA_test.pdf
-
