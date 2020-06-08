@@ -10,7 +10,7 @@ Weiyan
 > 1.  Samples: U2OS,Clone46 and Clone110;
 > 2.  2Gy IR, 15min, 60min, 120min;
 > 3.  Antibodies: BRCA1(m,);
-> 4.  IRIF foci was quantified by CellProfiler;
+> 4.  IRIF foci were counted manually;
 > 5.  Image collected on 10022015
 
 # Packages
@@ -48,7 +48,7 @@ IRIF_BRCA1_sum$IR<- factor(IRIF_BRCA1_sum$IR, levels = c("Mock","15 min","60 min
 ```
 
 ``` r
-po<-ggboxplot(IRIF_BRCA1_sum, 
+po<-ggboxplot(IRIF_BRCA1_sum,
           x="IR",
           y="percentage",
           color = "sample",
@@ -69,7 +69,7 @@ graph2pdf(file="plots/IRIF_BRCA1/IRIF_BRCA1_all.pdf", width=6, aspectr=sqrt(2),f
     ## Exported graph as plots/IRIF_BRCA1/IRIF_BRCA1_all.pdf
 
 ``` r
-p<-ggboxplot(IRIF_BRCA1_sum, 
+p<-ggboxplot(IRIF_BRCA1_sum,
           x="sample",
           y="percentage",
           # merge = TRUE,
@@ -95,7 +95,7 @@ write.csv(IRIF_BRCA1_sum_15min,file="clean/IRIF_BRCA1/IRIF_BRCA1_mock_15min.csv"
 ```
 
 ``` r
-p15<- ggboxplot(IRIF_BRCA1_sum_15min, 
+p15<- ggboxplot(IRIF_BRCA1_sum_15min,
           x="IR",
           y="percentage",
           color = "sample",
@@ -117,7 +117,7 @@ graph2pdf(file="plots/IRIF_BRCA1/IRIF_BRCA1_15min.pdf", width=6, aspectr=sqrt(2)
     ## Exported graph as plots/IRIF_BRCA1/IRIF_BRCA1_15min.pdf
 
 ``` r
-p15t<- ggboxplot(IRIF_BRCA1_sum_15min, 
+p15t<- ggboxplot(IRIF_BRCA1_sum_15min,
           x="sample",
           y="percentage",
           color = "sample",
