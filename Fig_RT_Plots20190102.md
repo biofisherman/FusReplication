@@ -9,7 +9,7 @@ anlaysis.
 # 1\. Data input
 
 ``` r
-setwd("/Users/weiyanjia/Desktop/Randal S. Tibbetts/FUS project/Bioinfo_analysis/FUS_Replication timing/Replication timing_08312018/01_02_normalization_smoothing/plots_Jia/01022019")
+setwd("/Users/weiyanjia/SynologyDrive/Randal\ S.\ Tibbetts/FUS\ project/Bioinfo_analysis/FUS_Replication\ timing/Replication\ timing_08312018/01_02_normalization_smoothing/plots_Jia/01022019")
 library(RColorBrewer)
 RT_Loess <- read.delim("all_sample_r1_r2_smooth.txt", header = TRUE, sep ="\t", stringsAsFactors = FALSE)
 RT_Loess[, c(2:3)] <- sapply(RT_Loess[, c(2:3)], as.integer)
@@ -331,6 +331,8 @@ ggdensity(sub_chr, x = c("U2OS_R1", "Clone110_R1","FUSClone110_R1"),
 
 # 5\. correlection-heatmap plot
 
+## 5.1 heatmap
+
 ``` r
 library(ComplexHeatmap)
 ```
@@ -353,7 +355,7 @@ library(circlize)
 ```
 
     ## ========================================
-    ## circlize version 0.4.9
+    ## circlize version 0.4.10
     ## CRAN page: https://cran.r-project.org/package=circlize
     ## Github page: https://github.com/jokergoo/circlize
     ## Documentation: https://jokergoo.github.io/circlize_book/book/
@@ -395,6 +397,141 @@ Heatmap(corr_matrix, name = "", col = col_fun,
 ```
 
 ![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+## 5.2 PCA
+
+``` r
+library(ggfortify)
+library(tidyverse)
+```
+
+    ## ── Attaching packages ───────────────────────────────────────────────────── tidyverse 1.3.0 ──
+
+    ## ✓ tibble  3.0.1     ✓ dplyr   1.0.0
+    ## ✓ tidyr   1.1.0     ✓ stringr 1.4.0
+    ## ✓ readr   1.3.1     ✓ forcats 0.5.0
+    ## ✓ purrr   0.3.4
+
+    ## ── Conflicts ──────────────────────────────────────────────────────── tidyverse_conflicts() ──
+    ## x dplyr::filter() masks stats::filter()
+    ## x dplyr::lag()    masks stats::lag()
+
+``` r
+library(export)
+```
+
+``` r
+pca_data <- RT_Loess[4:ncol(RT_Loess)]
+# head(pca_data)
+
+pca_data2<- tibble::rowid_to_column(corr_data, "ID")
+
+pca_data2$ID <-as.factor(pca_data2$ID)
+# head(pca_data2)
+
+Tran_pca_data <- gather(pca_data2,sample,RT,Clone110_R1:U2OS_R2)
+Tran_pca_data_S <- spread(Tran_pca_data,ID, RT)
+# head(Tran_pca_data_S)
+
+pca_res <- prcomp(Tran_pca_data_S[2:ncol(Tran_pca_data_S)], scale. = FALSE)
+autoplot(pca_res, data = Tran_pca_data_S, colour = 'sample')
+```
+
+    ## Warning: `select_()` is deprecated as of dplyr 0.7.0.
+    ## Please use `select()` instead.
+    ## This warning is displayed once every 8 hours.
+    ## Call `lifecycle::last_warnings()` to see where this warning was generated.
+
+![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+``` r
+graph2pdf(file="/Users/weiyanjia/SynologyDrive/Randal\ S.\ Tibbetts/FUS\ project/Bioinfo_analysis/FUS_Replication\ timing/Replication\ timing_08312018/01_02_normalization_smoothing/plots_Jia/01022019/PCA_RT.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+    ## Exported graph as /Users/weiyanjia/SynologyDrive/Randal S. Tibbetts/FUS project/Bioinfo_analysis/FUS_Replication timing/Replication timing_08312018/01_02_normalization_smoothing/plots_Jia/01022019/PCA_RT.pdf
+
+``` r
+Tran_pca_data_S_T<- Tran_pca_data_S%>%
+                    column_to_rownames("sample")
+pca_res <- prcomp(Tran_pca_data_S_T, scale. = FALSE)
+var_explained <- pca_res$sdev^2/sum(pca_res$sdev^2)
+var_explained[1:6]
+```
+
+    ## [1] 8.009698e-01 7.954648e-02 6.457223e-02 3.359288e-02 2.131863e-02
+    ## [6] 2.133411e-30
+
+``` r
+names(pca_res)
+```
+
+    ## [1] "sdev"     "rotation" "center"   "scale"    "x"
+
+``` r
+pca_res$x %>% 
+  as.data.frame %>%
+  rownames_to_column("sample") %>%
+  ggplot(aes(x=PC1,y=PC2)) + geom_point(aes(color=sample),size=4) +
+  theme_bw(base_size=20) + 
+  labs(x=paste0("PC1: ",round(var_explained[1]*100,1),"%"),
+       y=paste0("PC2: ",round(var_explained[2]*100,1),"%")) +
+  theme(legend.position="top")
+```
+
+![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+``` r
+graph2pdf(file="/Users/weiyanjia/SynologyDrive/Randal\ S.\ Tibbetts/FUS\ project/Bioinfo_analysis/FUS_Replication\ timing/Replication\ timing_08312018/01_02_normalization_smoothing/plots_Jia/01022019/PCA_RT2.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+    ## Exported graph as /Users/weiyanjia/SynologyDrive/Randal S. Tibbetts/FUS project/Bioinfo_analysis/FUS_Replication timing/Replication timing_08312018/01_02_normalization_smoothing/plots_Jia/01022019/PCA_RT2.pdf
+
+``` r
+pca_res$x %>% 
+  as.data.frame %>%
+  rownames_to_column("sample") %>%
+  ggplot(aes(x=PC1,y=PC2, label=sample, color=sample)) +
+  geom_label(aes(fill = sample), colour = "white", fontface = "bold")+
+  theme_bw(base_size=20) +
+  labs(x=paste0("PC1: ",round(var_explained[1]*100,1),"%"),
+       y=paste0("PC2: ",round(var_explained[2]*100,1),"%"))+
+  theme(legend.position="top")
+```
+
+![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+``` r
+graph2pdf(file="/Users/weiyanjia/SynologyDrive/Randal\ S.\ Tibbetts/FUS\ project/Bioinfo_analysis/FUS_Replication\ timing/Replication\ timing_08312018/01_02_normalization_smoothing/plots_Jia/01022019/PCA_RT3.pdf", width=8, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+    ## Exported graph as /Users/weiyanjia/SynologyDrive/Randal S. Tibbetts/FUS project/Bioinfo_analysis/FUS_Replication timing/Replication timing_08312018/01_02_normalization_smoothing/plots_Jia/01022019/PCA_RT3.pdf
+
+``` r
+pca_res_scale <- prcomp(Tran_pca_data_S[2:ncol(Tran_pca_data_S)], scale. = TRUE)
+# pca_res$x
+
+autoplot(pca_res_scale, data = Tran_pca_data_S, colour = 'sample')
+```
+
+![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+``` r
+library(M3C)
+# pca_data
+# s <- colnames(pca_data[1,])
+# 
+# celltypes<-c("Clone110_R1","FUSClone110_R1","U2OS_R1","Clone110_R2","FUSClone110_R2","U2OS_R2")
+# tsne(pca_data,labels=as.factor(celltypes))
+pca(pca_data,legendtextsize = 10,axistextsize = 10,dotsize=2)
+```
+
+![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
+``` r
+pca(pca_data,labels=as.factor(colnames(pca_data[1,])),legendtextsize = 10,axistextsize = 10,dotsize=2)
+```
+
+![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-19-2.png)<!-- -->
 
 # 6 Histogram plots of RT difference
 
@@ -448,7 +585,7 @@ gghistogram(RT_Loess, x = c("diff_U2OS_FUSClone110_R1", "diff_U2OS_Clone110_R1")
   scale_y_continuous(expand = c(0, 0))
 ```
 
-![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 \#\# 6.1
 R2
 
@@ -468,7 +605,7 @@ gghistogram(RT_Loess, x = c("diff_U2OS_FUSClone110_R2","diff_U2OS_Clone110_R2"),
   scale_y_continuous(expand = c(0, 0)) 
 ```
 
-![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 # 7\. Plot whole chromosomes RT data
 
@@ -494,7 +631,7 @@ theme(panel.spacing = unit(0.1, "lines"),
       panel.border = element_rect(linetype ="solid", fill = NA)) 
 ```
 
-![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ## 7.2 RT plot of R2
 
@@ -542,7 +679,7 @@ p + facet_grid(cols = vars(chr), scales = "free", space = "free", drop = TRUE, m
    theme(panel.spacing = unit(0, "lines")) 
 ```
 
-![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](Fig_RT_Plots20190102_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 ``` r
 sessionInfo()
@@ -550,7 +687,7 @@ sessionInfo()
 
     ## R version 3.6.3 (2020-02-29)
     ## Platform: x86_64-apple-darwin15.6.0 (64-bit)
-    ## Running under: macOS Catalina 10.15.4
+    ## Running under: macOS Catalina 10.15.5
     ## 
     ## Matrix products: default
     ## BLAS:   /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRblas.0.dylib
@@ -560,34 +697,55 @@ sessionInfo()
     ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
     ## 
     ## attached base packages:
-    ## [1] grid      stats     graphics  grDevices utils     datasets  methods  
-    ## [8] base     
+    ## [1] parallel  grid      stats     graphics  grDevices utils     datasets 
+    ## [8] methods   base     
     ## 
     ## other attached packages:
-    ## [1] ggsci_2.9            circlize_0.4.9       ComplexHeatmap_2.0.0
-    ## [4] ggpubr_0.3.0         ggplot2_3.3.0        reshape2_1.4.4      
-    ## [7] RColorBrewer_1.1-2  
+    ##  [1] ggsci_2.9            M3C_1.6.0            Biobase_2.44.0      
+    ##  [4] BiocGenerics_0.30.0  export_0.2.2.9001    forcats_0.5.0       
+    ##  [7] stringr_1.4.0        dplyr_1.0.0          purrr_0.3.4         
+    ## [10] readr_1.3.1          tidyr_1.1.0          tibble_3.0.1        
+    ## [13] tidyverse_1.3.0      ggfortify_0.4.10     circlize_0.4.10     
+    ## [16] ComplexHeatmap_2.0.0 ggpubr_0.4.0         ggplot2_3.3.2       
+    ## [19] reshape2_1.4.4       RColorBrewer_1.1-2  
     ## 
     ## loaded via a namespace (and not attached):
-    ##  [1] shape_1.4.4         GetoptLong_0.1.8    tidyselect_1.1.0   
-    ##  [4] xfun_0.14           purrr_0.3.4         haven_2.3.0        
-    ##  [7] lattice_0.20-41     carData_3.0-4       colorspace_1.4-1   
-    ## [10] vctrs_0.3.0         generics_0.0.2      htmltools_0.4.0    
-    ## [13] yaml_2.2.1          rlang_0.4.6         pillar_1.4.4       
-    ## [16] foreign_0.8-75      glue_1.4.1          withr_2.2.0        
-    ## [19] readxl_1.3.1        lifecycle_0.2.0     plyr_1.8.6         
-    ## [22] stringr_1.4.0       munsell_0.5.0       ggsignif_0.6.0     
-    ## [25] gtable_0.3.0        cellranger_1.1.0    zip_2.0.4          
-    ## [28] GlobalOptions_0.1.1 evaluate_0.14       labeling_0.3       
-    ## [31] knitr_1.28          rio_0.5.16          forcats_0.5.0      
-    ## [34] parallel_3.6.3      curl_4.3            broom_0.5.6        
-    ## [37] Rcpp_1.0.4.6        scales_1.1.1        backports_1.1.7    
-    ## [40] abind_1.4-5         farver_2.0.3        rjson_0.2.20       
-    ## [43] png_0.1-7           hms_0.5.3           digest_0.6.25      
-    ## [46] stringi_1.4.6       openxlsx_4.1.5      rstatix_0.5.0      
-    ## [49] dplyr_0.8.5         clue_0.3-57         tools_3.6.3        
-    ## [52] magrittr_1.5        tibble_3.0.1        cluster_2.1.0      
-    ## [55] crayon_1.3.4        tidyr_1.1.0         car_3.0-8          
-    ## [58] pkgconfig_2.0.3     ellipsis_0.3.1      data.table_1.12.8  
-    ## [61] assertthat_0.2.1    rmarkdown_2.1       R6_2.4.1           
-    ## [64] nlme_3.1-148        compiler_3.6.3
+    ##   [1] readxl_1.3.1            uuid_0.1-4              snow_0.4-3             
+    ##   [4] backports_1.1.8         systemfonts_0.2.3       NMF_0.22.0             
+    ##   [7] plyr_1.8.6              splines_3.6.3           sigclust_1.1.0         
+    ##  [10] crosstalk_1.1.0.1       gridBase_0.4-7          digest_0.6.25          
+    ##  [13] foreach_1.5.0           htmltools_0.5.0         matrixcalc_1.0-3       
+    ##  [16] viridis_0.5.1           fansi_0.4.1             magrittr_1.5           
+    ##  [19] cluster_2.1.0           doParallel_1.0.15       openxlsx_4.1.5         
+    ##  [22] modelr_0.1.8            officer_0.3.12          colorspace_1.4-1       
+    ##  [25] blob_1.2.1              rvest_0.3.5             haven_2.3.1            
+    ##  [28] xfun_0.15               crayon_1.3.4            jsonlite_1.7.0         
+    ##  [31] survival_3.2-3          iterators_1.0.12        glue_1.4.1             
+    ##  [34] registry_0.5-1          rvg_0.2.5               gtable_0.3.0           
+    ##  [37] webshot_0.5.2           GetoptLong_1.0.2        car_3.0-8              
+    ##  [40] shape_1.4.4             abind_1.4-5             scales_1.1.1           
+    ##  [43] DBI_1.1.0               rngtools_1.5            bibtex_0.4.2.2         
+    ##  [46] rstatix_0.6.0           miniUI_0.1.1.1          Rcpp_1.0.5             
+    ##  [49] viridisLite_0.3.0       xtable_1.8-4            clue_0.3-57            
+    ##  [52] foreign_0.8-75          htmlwidgets_1.5.1       httr_1.4.1             
+    ##  [55] ellipsis_0.3.1          pkgconfig_2.0.3         farver_2.0.3           
+    ##  [58] dbplyr_1.4.4            tidyselect_1.1.0        labeling_0.3           
+    ##  [61] rlang_0.4.6             manipulateWidget_0.10.1 later_1.1.0.1          
+    ##  [64] munsell_0.5.0           cellranger_1.1.0        tools_3.6.3            
+    ##  [67] cli_2.0.2               generics_0.0.2          broom_0.5.6            
+    ##  [70] evaluate_0.14           fastmap_1.0.1           yaml_2.2.1             
+    ##  [73] knitr_1.29              fs_1.4.2                zip_2.0.4              
+    ##  [76] rgl_0.100.54            dendextend_1.13.4       nlme_3.1-148           
+    ##  [79] mime_0.9                xml2_1.3.2              compiler_3.6.3         
+    ##  [82] rstudioapi_0.11         curl_4.3                png_0.1-7              
+    ##  [85] ggsignif_0.6.0          reprex_0.3.0            stringi_1.4.6          
+    ##  [88] gdtools_0.2.2           stargazer_5.2.2         lattice_0.20-41        
+    ##  [91] Matrix_1.2-18           vctrs_0.3.1             pillar_1.4.4           
+    ##  [94] lifecycle_0.2.0         GlobalOptions_0.1.2     corpcor_1.6.9          
+    ##  [97] data.table_1.12.8       flextable_0.5.10        httpuv_1.5.4           
+    ## [100] R6_2.4.1                promises_1.1.1          gridExtra_2.3          
+    ## [103] rio_0.5.16              codetools_0.2-16        assertthat_0.2.1       
+    ## [106] pkgmaker_0.31.1         rjson_0.2.20            withr_2.2.0            
+    ## [109] hms_0.5.3               doSNOW_1.0.18           rmarkdown_2.3          
+    ## [112] carData_3.0-4           Rtsne_0.15              shiny_1.5.0            
+    ## [115] lubridate_1.7.9         base64enc_0.1-3
