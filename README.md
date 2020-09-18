@@ -78,6 +78,12 @@
 * __Fig. 9D:__ [Doughnut Pie chart of FADs coverage](/PieChart_FADs_Coverage.md)
   * [Rmd file](code/PieChart_FADs_Coverage.Rmd).
   * [raw data of 9D](data/FADs_coverage.csv).
+* __Sup. Fig. 1:__ [IRIF of 53BP1 in FUS knockout cells](/Fig_IRIF_53BP1.md)
+  * [Rmd file](code/Fig_IRIF_53BP1.Rmd).
+  * raw data
+    * [R1](data/53BP1_Foci/fociR1.csv).
+    * [R2](data/53BP1_Foci/fociR2.csv). 
+    * [R3](data/53BP1_Foci/fociR3.csv).
 * __Sup. Fig. 2B:__ [IRIF of BRCA1 in FUS knockout cells](/fig_IRIF_BRCA1_FUS-KO.md)
   * [Rmd file](code/fig_IRIF_BRCA1_FUS-KO.Rmd).
   * [raw data](data/IRIF_BRCA1_mock_15min.csv).

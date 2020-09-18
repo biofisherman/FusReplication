@@ -1,0 +1,271 @@
+---
+title: "IRIF of 53BP1 foci analysis"
+author: "Weiyan"
+date: "08/06/2020"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+>Check the IRIF of TP53BP1 in FUS KO cells
+
+**Note**:
+
+> 1. Samples: WT: GUS/U2OS, KO: GUS/Clone110, RE: FUS/Clone110;
+  2. Antibodies: 53BP1(R, A300-272A-M, Bethyl), rH2AX(M,05-636,EMD Millipore);
+  4. Foci were ideatified by CellProfiler;
+  5. R1 and R3 the the 53BP1 foci setting is 2:6 and the R2 is 3:6 (due to high intensity of foci this replicate).
+
+# 1. packages
+
+```{r}
+library(ggbeeswarm)
+library(viridis)
+library(tidyverse)
+library(ggpubr)
+library(export)
+```
+
+
+# 2. load raw data
+
+```{r}
+# R1
+Nuclei_R1 <- read.csv("IRIF_53BP1_07282020/analysis/raw/TP53BP1_rH2AX_2Gy_Nuclei.csv",header = TRUE)
+Image_R1 <- read.csv("IRIF_53BP1_07282020/analysis/raw/TP53BP1_rH2AX_2Gy_Image.csv",header = TRUE)
+
+# R2
+Nuclei_R2 <- read.csv("IRIF_53BP1_07302020/analysis/raw/v2/TP53BP1_rH2AX_2Gy_Nuclei.csv",header = TRUE)
+Image_R2 <- read.csv("IRIF_53BP1_07302020/analysis/raw/v2/TP53BP1_rH2AX_2Gy_Image.csv",header = TRUE)
+# R3
+Nuclei_R3 <- read.csv("IRIF_53BP1_08022020/analysis/raw/TP53BP1_rH2AX_2Gy_Nuclei.csv",header = TRUE)
+Image_R3 <- read.csv("IRIF_53BP1_08022020/analysis/raw/TP53BP1_rH2AX_2Gy_Image.csv",header = TRUE)
+```
+
+# 3. QC of samples
+
+## 3.1 R1
+
+```{r}
+IRIF_foci_R1 <- Nuclei_R1 %>%
+             select(ImageNumber,ObjectNumber,Children_IRIF_TP53BP1_Count,Children_IRIF_rH2AX_Count,Intensity_IntegratedIntensity_DAPI,Intensity_IntegratedIntensity_TP53BP1,Mean_IRIF_TP53BP1_Intensity_MeanIntensity_TP53BP1,Mean_IRIF_rH2AX_Intensity_MeanIntensity_rH2AX)%>%
+             rename(TP53BP1_Count=Children_IRIF_TP53BP1_Count,rH2AX_Count=Children_IRIF_rH2AX_Count,Intensity_DAPI=Intensity_IntegratedIntensity_DAPI, Intensity_TP53BP1=Intensity_IntegratedIntensity_TP53BP1, MeanIntensity_TP53BP1_foci=Mean_IRIF_TP53BP1_Intensity_MeanIntensity_TP53BP1, MeanIntensity_rH2AX_foci = Mean_IRIF_rH2AX_Intensity_MeanIntensity_rH2AX)%>%
+             replace(is.na(.), 0)
+
+Image2_R1<- Image_R1%>%
+        select(ImageNumber, FileName_TP53BP1_Image, Count_IRIF_TP53BP1,Count_IRIF_rH2AX,Count_Nuclei)%>%
+        separate(FileName_TP53BP1_Image,c("sample","A","B","X","treat"), sep = "-", remove = FALSE)%>%
+        select(-A,-B,-X)
+metadataR1<-Image2_R1%>%
+                select(ImageNumber,sample,treat)
+
+fociR1<- IRIF_foci_R1%>%
+            left_join(metadataR1,by='ImageNumber')%>%
+            mutate(TP53BP1_Count=as.numeric(TP53BP1_Count), rH2AX_Count=as.numeric(rH2AX_Count))
+fociR1$replicate <- "R1"
+
+fociR1$treat<- factor(fociR1$treat, levels = c("mock","15min","2h"))
+```
+
+## 3.2 R2
+
+```{r}
+IRIF_foci_R2 <- Nuclei_R2 %>%
+             select(ImageNumber,ObjectNumber,Children_IRIF_TP53BP1_Count,Children_IRIF_rH2AX_Count,Intensity_IntegratedIntensity_DAPI,Intensity_IntegratedIntensity_TP53BP1,Mean_IRIF_TP53BP1_Intensity_MeanIntensity_TP53BP1,Mean_IRIF_rH2AX_Intensity_MeanIntensity_rH2AX)%>%
+             rename(TP53BP1_Count=Children_IRIF_TP53BP1_Count,rH2AX_Count=Children_IRIF_rH2AX_Count,Intensity_DAPI=Intensity_IntegratedIntensity_DAPI, Intensity_TP53BP1=Intensity_IntegratedIntensity_TP53BP1, MeanIntensity_TP53BP1_foci=Mean_IRIF_TP53BP1_Intensity_MeanIntensity_TP53BP1, MeanIntensity_rH2AX_foci = Mean_IRIF_rH2AX_Intensity_MeanIntensity_rH2AX)%>%
+             replace(is.na(.), 0)
+
+Image2_R2<- Image_R2%>%
+        select(ImageNumber, FileName_TP53BP1_Image, Count_IRIF_TP53BP1,Count_IRIF_rH2AX,Count_Nuclei)%>%
+        separate(FileName_TP53BP1_Image,c("sample","A","B","X","treat"), sep = "-", remove = FALSE)%>%
+        select(-A,-B,-X)
+metadataR2<-Image2_R2%>%
+                select(ImageNumber,sample,treat)
+
+fociR2<- IRIF_foci_R2%>%
+            left_join(metadataR2,by='ImageNumber')%>%
+            mutate(TP53BP1_Count=as.numeric(TP53BP1_Count), rH2AX_Count=as.numeric(rH2AX_Count))
+fociR2$replicate <- "R2"
+
+fociR2$treat<- factor(fociR2$treat, levels = c("mock","15min","2h"))
+```
+
+## 3.3 R3
+
+```{r}
+IRIF_foci_R3 <- Nuclei_R3 %>%
+             select(ImageNumber,ObjectNumber,Children_IRIF_TP53BP1_Count,Children_IRIF_rH2AX_Count,Intensity_IntegratedIntensity_DAPI,Intensity_IntegratedIntensity_TP53BP1,Mean_IRIF_TP53BP1_Intensity_MeanIntensity_TP53BP1,Mean_IRIF_rH2AX_Intensity_MeanIntensity_rH2AX)%>%
+             rename(TP53BP1_Count=Children_IRIF_TP53BP1_Count,rH2AX_Count=Children_IRIF_rH2AX_Count,Intensity_DAPI=Intensity_IntegratedIntensity_DAPI, Intensity_TP53BP1=Intensity_IntegratedIntensity_TP53BP1, MeanIntensity_TP53BP1_foci=Mean_IRIF_TP53BP1_Intensity_MeanIntensity_TP53BP1, MeanIntensity_rH2AX_foci = Mean_IRIF_rH2AX_Intensity_MeanIntensity_rH2AX)%>%
+             replace(is.na(.), 0)
+
+Image2_R3<- Image_R3%>%
+        select(ImageNumber, FileName_TP53BP1_Image, Count_IRIF_TP53BP1,Count_IRIF_rH2AX,Count_Nuclei)%>%
+        separate(FileName_TP53BP1_Image,c("sample","A","B","X","treat"), sep = "-", remove = FALSE)%>%
+        select(-A,-B,-X)
+metadataR3<-Image2_R3%>%
+                select(ImageNumber,sample,treat)
+
+fociR3<- IRIF_foci_R3%>%
+            left_join(metadataR3,by='ImageNumber')%>%
+            mutate(TP53BP1_Count=as.numeric(TP53BP1_Count), rH2AX_Count=as.numeric(rH2AX_Count))
+fociR3$replicate <- "R3"
+
+fociR3$treat<- factor(fociR3$treat, levels = c("mock","15min","2h"))
+```
+
+## 3.4 foci counts data
+
+```{r}
+fociAll <-bind_rows(fociR1,fociR2,fociR3)%>%
+          filter(TP53BP1_Count<=50, rH2AX_Count <=100)
+fociAll$treat<- factor(fociAll$treat, levels = c("mock","15min","2h"))
+fociAll$sample<- factor(fociAll$sample, levels = c("GUSU2OS","GUSClone110","FUSClone110"))
+
+levels(fociAll$treat)
+
+RA <- fociAll%>%
+      select(replicate,TP53BP1_Count, treat, sample)%>%
+      group_by(sample, treat, replicate)%>%
+      summarise_each(list(median))
+
+print(as.data.frame(RA)) ## case RA is a tibble.str(RA) or class(RA)
+
+CellCounts <- fociAll%>%
+              count(sample,treat, replicate,name = "n_Cell")
+CellCounts
+summary(CellCounts$n_Cell)
+```
+
+# 4. 53BP1 foci
+
+## 4.1 density plot
+
+```{r fig.height=8, fig.width=10}
+ggdensity(fociAll,
+            x = "TP53BP1_Count",
+           add = "median", 
+           rug = TRUE,
+           color = "sample", 
+           legend = "top",
+           facet.by = c("replicate","treat"),
+           ncol = 3,
+           palette = "aaas"
+           )
+
+graph2pdf(file="figures/DensityPlotTP53BP1.pdf", width=12, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+## 4.2 box plot
+
+```{r fig.height=8, fig.width=12}
+my_comparison <- list(c("GUSClone110","GUSU2OS"), c("GUSClone110","FUSClone110"), c("FUSClone110","GUSU2OS"))
+ggboxplot(fociAll, 
+          x="sample",
+          y="TP53BP1_Count",
+          color = "sample",
+          palette = "aaas",
+          facet.by = c("replicate", "treat"),
+          order = c("GUSU2OS","GUSClone110","FUSClone110"),
+          add = "jitter",
+          ylab = "TP53BP1 Foci Counts",
+          xlab = ""
+          )+
+
+  stat_compare_means(comparisons = my_comparison, 
+                     method = "wilcox.test",
+                     label = "p.format"
+                     )+
+  stat_compare_means(method = "kruskal.test", # this step for mutiple groups comparison
+                     label.y = 70) 
+graph2pdf(file="figures/BoxPlotTP53BP1.pdf", width=12, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+## 4.3 box plot(pool data)
+```{r fig.height=4, fig.width=12}
+my_comparison <- list(c("GUSClone110","GUSU2OS"), c("GUSClone110","FUSClone110"), c("FUSClone110","GUSU2OS"))
+ggboxplot(fociAll, 
+          x="sample",
+          y="TP53BP1_Count",
+          color = "sample",
+          palette = "aaas",
+          facet.by = "treat",
+          order = c("GUSU2OS","GUSClone110","FUSClone110"),
+          add = "jitter",
+          ylab = "TP53BP1 Foci Counts",
+          xlab = ""
+          )+
+
+  stat_compare_means(comparisons = my_comparison, 
+                     method = "wilcox.test",
+                     label = "p.format"
+                     )+
+  stat_compare_means(method = "kruskal.test", # this step for mutiple groups comparison
+                     label.y = 70) 
+graph2pdf(file="figures/BoxPlotTP53BP1_all.pdf", width=12, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+# 5. rH2AX foci
+
+## 5.1 density plot
+
+```{r fig.height=8, fig.width=10}
+ggdensity(fociAll,
+            x = "rH2AX_Count",
+           add = "median", 
+           rug = TRUE,
+           color = "sample", 
+           legend = "top",
+           facet.by = c("replicate","treat"),
+           ncol = 3,
+           palette = "aaas"
+           )
+graph2pdf(file="figures/DensityPlotrH2AX.pdf", width=12, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+## 5.2 box plot
+```{r fig.height=8, fig.width=12}
+my_comparison <- list(c("GUSClone110","GUSU2OS"), c("GUSClone110","FUSClone110"), c("FUSClone110","GUSU2OS"))
+ggboxplot(fociAll, 
+          x="sample",
+          y="rH2AX_Count",
+          color = "sample",
+          palette = "aaas",
+          facet.by = c("replicate", "treat"),
+          order = c("GUSU2OS","GUSClone110","FUSClone110"),
+          add = "jitter",
+          ylab = "rH2AX Foci Counts",
+          xlab = ""
+          )+
+  stat_compare_means(comparisons = my_comparison, # this step for group comparison
+                     method = "wilcox.test",
+                     label = "p.format"
+                     )+
+  stat_compare_means(method = "kruskal.test", # this step for mutiple groups comparison
+                     label.y = 150) 
+graph2pdf(file="figures/BoxPlotrH2AX.pdf", width=12, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+## 5.3 box plot(pool data)
+
+```{r fig.height=4, fig.width=12}
+my_comparison <- list(c("GUSClone110","GUSU2OS"), c("GUSClone110","FUSClone110"), c("FUSClone110","GUSU2OS"))
+ggboxplot(fociAll, 
+          x="sample",
+          y="rH2AX_Count",
+          color = "sample",
+          palette = "aaas",
+          facet.by =  "treat",
+          order = c("GUSU2OS","GUSClone110","FUSClone110"),
+          add = "jitter",
+          ylab = "rH2AX Foci Counts",
+          xlab = ""
+          )+
+  stat_compare_means(comparisons = my_comparison, # this step for group comparison
+                     method = "wilcox.test",
+                     label = "p.format"
+                     )+
+  stat_compare_means(method = "kruskal.test", # this step for mutiple groups comparison
+                     label.y = 150) 
+graph2pdf(file="figures/BoxPlotrH2AX_all.pdf", width=12, aspectr=sqrt(2),font = "Arial",bg = "transparent")
+```
+
+```{r}
+sessionInfo()
+```
