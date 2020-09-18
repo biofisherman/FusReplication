@@ -79,17 +79,19 @@
   * [Rmd file](code/PieChart_FADs_Coverage.Rmd).
   * [raw data of 9D](data/FADs_coverage.csv).
 * __Sup. Fig. 1:__ [IRIF of 53BP1 in FUS knockout cells](/Fig_IRIF_53BP1.md)
-  * [Rmd file](code/Fig_IRIF_53BP1.Rmd).
+  * [Rmd file](code/Fig_IRIF_53BP1.Rmd)
   * raw data
-    * [R1](data/53BP1_Foci/fociR1.csv).
-    * [R2](data/53BP1_Foci/fociR2.csv). 
-    * [R3](data/53BP1_Foci/fociR3.csv).
-* __Sup. Fig. 2B:__ [IRIF of BRCA1 in FUS knockout cells](/fig_IRIF_BRCA1_FUS-KO.md)
-  * [Rmd file](code/fig_IRIF_BRCA1_FUS-KO.Rmd).
-  * [raw data](data/IRIF_BRCA1_mock_15min.csv).
-* __Sup. Fig. 2D:__ [IRIF of BRCA1 in CyclinA postive cells](/fig_IRIF_BRCA1_CyclinA.md)
-  * [Rmd file](code/fig_IRIF_BRCA1_CyclinA.Rmd).
-  * [raw data](data/IRIF_BRCA1_CyclinA.csv).
+    * [R1](data/53BP1_Foci/fociR1.csv)
+    * [R2](data/53BP1_Foci/fociR2.csv)
+    * [R3](data/53BP1_Foci/fociR3.csv)
+    * [CellProfiler Setting](code/IRIF_53BP1_Nuclear.cpproj)
+* __Sup. Fig. 2:__ [IRIF of BRCA1 in FUS knockout cells](/Fig_IRIF_BRCA1.md)
+  * [Rmd file](code/Fig_IRIF_BRCA1.Rmd)
+  * raw data
+    * [R1](data/BRCA1_Foci/fociR1.csv)
+    * [R2](data/BRCA1_Foci/fociR2.csv)
+    * [R3](data/BRCA1_Foci/fociR3.csv)
+    * [CellProfiler Setting](code/IRIF_BRCA1_Nuclear.cpproj)
 * __Sup. Fig. 5A and B:__ [RNA SEQ analysis of FUS](/Fig_FUS_RnaSeqDESeq2.md)
   * [Rmd file](code/Fig_FUS_RnaSeqDESeq2.Rmd).
   * [Count Matrix by FeatureCounts](data/fus_featurecounts.txt.Rmatrix.txt).
