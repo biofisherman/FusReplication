@@ -7,7 +7,7 @@
   * [raw data of normalized_counts.csv](data/normalized_counts.csv).
   * [raw data of ann.sample.csv](data/ann.sample.csv).
   * [raw data of FUS_Seq_SSIV_All.csv](data/FUS_Seq_SSIV_All.csv).
-* __Fig. 6A and Sup. Fig. 7:__ [Analysis of FUS MS/MS data](/fig_FUS_MS.md)
+* __Fig. 6A and Sup. Fig. 6:__ [Analysis of FUS MS/MS data](/fig_FUS_MS.md)
   * [Rmd file](code/fig_FUS_MS.Rmd).
   * [MSigDB for biological processing(c5.bp.v6.2.symbols.gmt)](data/).
   * [raw data of AllResultsOfQuantification_FUS.csv](data/AllResultsOfQuantification_FUS.csv).
