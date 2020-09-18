@@ -249,7 +249,7 @@ CellCounts
 summary(CellCounts$n_Cell)
 ```
 
-    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
     ##   162.0   201.0   229.0   241.9   278.5   350.0
 
 # 4\. 53BP1 foci
@@ -259,9 +259,9 @@ summary(CellCounts$n_Cell)
 ``` r
 ggdensity(fociAll,
             x = "TP53BP1_Count",
-           add = "median", 
+           add = "median",
            rug = TRUE,
-           color = "sample", 
+           color = "sample",
            legend = "top",
            facet.by = c("replicate","treat"),
            ncol = 3,
@@ -281,7 +281,7 @@ graph2pdf(file="figures/DensityPlotTP53BP1.pdf", width=12, aspectr=sqrt(2),font 
 
 ``` r
 my_comparison <- list(c("GUSClone110","GUSU2OS"), c("GUSClone110","FUSClone110"), c("FUSClone110","GUSU2OS"))
-ggboxplot(fociAll, 
+ggboxplot(fociAll,
           x="sample",
           y="TP53BP1_Count",
           color = "sample",
@@ -293,12 +293,12 @@ ggboxplot(fociAll,
           xlab = ""
           )+
 
-  stat_compare_means(comparisons = my_comparison, 
+  stat_compare_means(comparisons = my_comparison,
                      method = "wilcox.test",
                      label = "p.format"
                      )+
   stat_compare_means(method = "kruskal.test", # this step for mutiple groups comparison
-                     label.y = 70) 
+                     label.y = 70)
 ```
 
 ![](Fig_IRIF_53BP1_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
@@ -309,37 +309,6 @@ graph2pdf(file="figures/BoxPlotTP53BP1.pdf", width=12, aspectr=sqrt(2),font = "A
 
     ## Exported graph as figures/BoxPlotTP53BP1.pdf
 
-## 4.3 box plot(pool data)
-
-``` r
-my_comparison <- list(c("GUSClone110","GUSU2OS"), c("GUSClone110","FUSClone110"), c("FUSClone110","GUSU2OS"))
-ggboxplot(fociAll, 
-          x="sample",
-          y="TP53BP1_Count",
-          color = "sample",
-          palette = "aaas",
-          facet.by = "treat",
-          order = c("GUSU2OS","GUSClone110","FUSClone110"),
-          add = "jitter",
-          ylab = "TP53BP1 Foci Counts",
-          xlab = ""
-          )+
-
-  stat_compare_means(comparisons = my_comparison, 
-                     method = "wilcox.test",
-                     label = "p.format"
-                     )+
-  stat_compare_means(method = "kruskal.test", # this step for mutiple groups comparison
-                     label.y = 70) 
-```
-
-![](Fig_IRIF_53BP1_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
-
-``` r
-graph2pdf(file="figures/BoxPlotTP53BP1_all.pdf", width=12, aspectr=sqrt(2),font = "Arial",bg = "transparent")
-```
-
-    ## Exported graph as figures/BoxPlotTP53BP1_all.pdf
 
 # 5\. rH2AX foci
 
@@ -348,9 +317,9 @@ graph2pdf(file="figures/BoxPlotTP53BP1_all.pdf", width=12, aspectr=sqrt(2),font 
 ``` r
 ggdensity(fociAll,
             x = "rH2AX_Count",
-           add = "median", 
+           add = "median",
            rug = TRUE,
-           color = "sample", 
+           color = "sample",
            legend = "top",
            facet.by = c("replicate","treat"),
            ncol = 3,
@@ -370,7 +339,7 @@ graph2pdf(file="figures/DensityPlotrH2AX.pdf", width=12, aspectr=sqrt(2),font = 
 
 ``` r
 my_comparison <- list(c("GUSClone110","GUSU2OS"), c("GUSClone110","FUSClone110"), c("FUSClone110","GUSU2OS"))
-ggboxplot(fociAll, 
+ggboxplot(fociAll,
           x="sample",
           y="rH2AX_Count",
           color = "sample",
@@ -386,7 +355,7 @@ ggboxplot(fociAll,
                      label = "p.format"
                      )+
   stat_compare_means(method = "kruskal.test", # this step for mutiple groups comparison
-                     label.y = 150) 
+                     label.y = 150)
 ```
 
 ![](Fig_IRIF_53BP1_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
@@ -397,37 +366,6 @@ graph2pdf(file="figures/BoxPlotrH2AX.pdf", width=12, aspectr=sqrt(2),font = "Ari
 
     ## Exported graph as figures/BoxPlotrH2AX.pdf
 
-## 5.3 box plot(pool data)
-
-``` r
-my_comparison <- list(c("GUSClone110","GUSU2OS"), c("GUSClone110","FUSClone110"), c("FUSClone110","GUSU2OS"))
-ggboxplot(fociAll, 
-          x="sample",
-          y="rH2AX_Count",
-          color = "sample",
-          palette = "aaas",
-          facet.by =  "treat",
-          order = c("GUSU2OS","GUSClone110","FUSClone110"),
-          add = "jitter",
-          ylab = "rH2AX Foci Counts",
-          xlab = ""
-          )+
-  stat_compare_means(comparisons = my_comparison, # this step for group comparison
-                     method = "wilcox.test",
-                     label = "p.format"
-                     )+
-  stat_compare_means(method = "kruskal.test", # this step for mutiple groups comparison
-                     label.y = 150) 
-```
-
-![](Fig_IRIF_53BP1_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
-
-``` r
-graph2pdf(file="figures/BoxPlotrH2AX_all.pdf", width=12, aspectr=sqrt(2),font = "Arial",bg = "transparent")
-```
-
-    ## Exported graph as figures/BoxPlotrH2AX_all.pdf
-
 ``` r
 sessionInfo()
 ```
@@ -435,51 +373,51 @@ sessionInfo()
     ## R version 3.6.3 (2020-02-29)
     ## Platform: x86_64-apple-darwin15.6.0 (64-bit)
     ## Running under: macOS Catalina 10.15.6
-    ## 
+    ##
     ## Matrix products: default
     ## BLAS:   /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRblas.0.dylib
     ## LAPACK: /Library/Frameworks/R.framework/Versions/3.6/Resources/lib/libRlapack.dylib
-    ## 
+    ##
     ## locale:
     ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
-    ## 
+    ##
     ## attached base packages:
-    ## [1] stats     graphics  grDevices utils     datasets  methods   base     
-    ## 
+    ## [1] stats     graphics  grDevices utils     datasets  methods   base
+    ##
     ## other attached packages:
-    ##  [1] export_0.2.2.9001 ggpubr_0.4.0      forcats_0.5.0     stringr_1.4.0    
-    ##  [5] dplyr_1.0.0       purrr_0.3.4       readr_1.3.1       tidyr_1.1.0      
+    ##  [1] export_0.2.2.9001 ggpubr_0.4.0      forcats_0.5.0     stringr_1.4.0
+    ##  [5] dplyr_1.0.0       purrr_0.3.4       readr_1.3.1       tidyr_1.1.0
     ##  [9] tibble_3.0.3      tidyverse_1.3.0   viridis_0.5.1     viridisLite_0.3.0
-    ## [13] ggbeeswarm_0.6.0  ggplot2_3.3.2    
-    ## 
+    ## [13] ggbeeswarm_0.6.0  ggplot2_3.3.2
+    ##
     ## loaded via a namespace (and not attached):
-    ##  [1] fs_1.4.2                lubridate_1.7.9         webshot_0.5.2          
-    ##  [4] httr_1.4.1              ggsci_2.9               tools_3.6.3            
-    ##  [7] backports_1.1.8         R6_2.4.1                vipor_0.4.5            
+    ##  [1] fs_1.4.2                lubridate_1.7.9         webshot_0.5.2
+    ##  [4] httr_1.4.1              ggsci_2.9               tools_3.6.3
+    ##  [7] backports_1.1.8         R6_2.4.1                vipor_0.4.5
     ## [10] DBI_1.1.0               colorspace_1.4-1        manipulateWidget_0.10.1
-    ## [13] withr_2.2.0             tidyselect_1.1.0        gridExtra_2.3          
-    ## [16] curl_4.3                compiler_3.6.3          cli_2.0.2              
-    ## [19] rvest_0.3.5             flextable_0.5.10        xml2_1.3.2             
-    ## [22] officer_0.3.12          labeling_0.3            scales_1.1.1           
-    ## [25] systemfonts_0.2.3       digest_0.6.25           foreign_0.8-75         
-    ## [28] rmarkdown_2.3           rio_0.5.16              base64enc_0.1-3        
-    ## [31] pkgconfig_2.0.3         htmltools_0.5.0         fastmap_1.0.1          
-    ## [34] dbplyr_1.4.4            rvg_0.2.5               htmlwidgets_1.5.1      
-    ## [37] rlang_0.4.7             readxl_1.3.1            rstudioapi_0.11        
-    ## [40] shiny_1.5.0             farver_2.0.3            generics_0.0.2         
-    ## [43] jsonlite_1.7.0          crosstalk_1.1.0.1       zip_2.0.4              
-    ## [46] car_3.0-8               magrittr_1.5            Rcpp_1.0.5             
-    ## [49] munsell_0.5.0           fansi_0.4.1             abind_1.4-5            
-    ## [52] gdtools_0.2.2           lifecycle_0.2.0         stringi_1.4.6          
-    ## [55] yaml_2.2.1              carData_3.0-4           grid_3.6.3             
-    ## [58] blob_1.2.1              promises_1.1.1          crayon_1.3.4           
-    ## [61] miniUI_0.1.1.1          haven_2.3.1             stargazer_5.2.2        
-    ## [64] hms_0.5.3               knitr_1.29              pillar_1.4.6           
-    ## [67] uuid_0.1-4              ggsignif_0.6.0          reprex_0.3.0           
-    ## [70] glue_1.4.1              evaluate_0.14           data.table_1.12.8      
-    ## [73] modelr_0.1.8            httpuv_1.5.4            vctrs_0.3.2            
-    ## [76] cellranger_1.1.0        gtable_0.3.0            assertthat_0.2.1       
-    ## [79] xfun_0.15               openxlsx_4.1.5          mime_0.9               
-    ## [82] xtable_1.8-4            broom_0.7.0             later_1.1.0.1          
-    ## [85] rstatix_0.6.0           beeswarm_0.2.3          rgl_0.100.54           
+    ## [13] withr_2.2.0             tidyselect_1.1.0        gridExtra_2.3
+    ## [16] curl_4.3                compiler_3.6.3          cli_2.0.2
+    ## [19] rvest_0.3.5             flextable_0.5.10        xml2_1.3.2
+    ## [22] officer_0.3.12          labeling_0.3            scales_1.1.1
+    ## [25] systemfonts_0.2.3       digest_0.6.25           foreign_0.8-75
+    ## [28] rmarkdown_2.3           rio_0.5.16              base64enc_0.1-3
+    ## [31] pkgconfig_2.0.3         htmltools_0.5.0         fastmap_1.0.1
+    ## [34] dbplyr_1.4.4            rvg_0.2.5               htmlwidgets_1.5.1
+    ## [37] rlang_0.4.7             readxl_1.3.1            rstudioapi_0.11
+    ## [40] shiny_1.5.0             farver_2.0.3            generics_0.0.2
+    ## [43] jsonlite_1.7.0          crosstalk_1.1.0.1       zip_2.0.4
+    ## [46] car_3.0-8               magrittr_1.5            Rcpp_1.0.5
+    ## [49] munsell_0.5.0           fansi_0.4.1             abind_1.4-5
+    ## [52] gdtools_0.2.2           lifecycle_0.2.0         stringi_1.4.6
+    ## [55] yaml_2.2.1              carData_3.0-4           grid_3.6.3
+    ## [58] blob_1.2.1              promises_1.1.1          crayon_1.3.4
+    ## [61] miniUI_0.1.1.1          haven_2.3.1             stargazer_5.2.2
+    ## [64] hms_0.5.3               knitr_1.29              pillar_1.4.6
+    ## [67] uuid_0.1-4              ggsignif_0.6.0          reprex_0.3.0
+    ## [70] glue_1.4.1              evaluate_0.14           data.table_1.12.8
+    ## [73] modelr_0.1.8            httpuv_1.5.4            vctrs_0.3.2
+    ## [76] cellranger_1.1.0        gtable_0.3.0            assertthat_0.2.1
+    ## [79] xfun_0.15               openxlsx_4.1.5          mime_0.9
+    ## [82] xtable_1.8-4            broom_0.7.0             later_1.1.0.1
+    ## [85] rstatix_0.6.0           beeswarm_0.2.3          rgl_0.100.54
     ## [88] ellipsis_0.3.1
